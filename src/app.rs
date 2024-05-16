@@ -9,7 +9,7 @@ use cosmic::{widget, Application, Element};
 /// This is the struct that represents your application.
 /// It is used to define the data that will be used by your application.
 #[derive(Clone, Default)]
-pub struct YourApp {
+pub struct CosmicBackups {
     /// This is the core of your application, it is used to communicate with the Cosmic runtime.
     /// It is used to send messages to your application, and to access the resources of the Cosmic runtime.
     core: Core,
@@ -29,14 +29,14 @@ pub enum Message {}
 /// - `Flags` is the data that your application needs to use before it starts.
 /// - `Message` is the enum that contains all the possible variants that your application will need to transmit messages.
 /// - `APP_ID` is the unique identifier of your application.
-impl Application for YourApp {
+impl Application for CosmicBackups {
     type Executor = cosmic::executor::Default;
 
     type Flags = ();
 
     type Message = Message;
 
-    const APP_ID: &'static str = "com.example.CosmicAppTemplate";
+    const APP_ID: &'static str = "com.github.ahoneybun.CosmicBackups";
 
     fn core(&self) -> &Core {
         &self.core
@@ -59,7 +59,7 @@ impl Application for YourApp {
     /// - `flags` is used to pass in any data that your application needs to use before it starts.
     /// - `Command` type is used to send messages to your application. `Command::none()` can be used to send no messages to your application.
     fn init(core: Core, _flags: Self::Flags) -> (Self, Command<Self::Message>) {
-        let example = YourApp { core };
+        let example = CosmicBackups { core };
 
         (example, Command::none())
     }
