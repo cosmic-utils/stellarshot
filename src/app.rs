@@ -76,7 +76,7 @@ impl Application for CosmicBackups {
     }
 
     /// This is the header of your application, it can be used to display the title of your application.
-    fn header_center(&self) -> Vec<Element<Self::Message>> {
+    fn header_start(&self) -> Vec<Element<Self::Message>> {
         vec![menu::menu_bar(&self.key_binds)]
     }
 
