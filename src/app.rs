@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
+use std::collections::HashMap;
+
 use crate::fl;
 use cosmic::app::{Command, Core};
 use cosmic::iced::alignment::{Horizontal, Vertical};
 use cosmic::iced::Length;
 use cosmic::widget::menu::action::MenuAction;
+use cosmic::widget::menu::key_bind::KeyBind;
 use cosmic::widget::segmented_button::Entity;
 use cosmic::{widget, Application, Element};
 
@@ -17,6 +20,7 @@ pub struct CosmicBackups {
     /// This is the core of your application, it is used to communicate with the Cosmic runtime.
     /// It is used to send messages to your application, and to access the resources of the Cosmic runtime.
     core: Core,
+    key_binds: HashMap<KeyBind, Action>,
 }
 
 /// This is the enum that contains all the possible variants that your application will need to transmit messages.
@@ -24,7 +28,8 @@ pub struct CosmicBackups {
 /// If your application does not need to send messages, you can use an empty enum or `()`.
 #[derive(Debug, Clone)]
 pub enum Message {
-    NavMenuAction(NavMenuAction),
+    WindowClose,
+    WindowNew,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -40,14 +45,6 @@ impl MenuAction for Action {
             Action::WindowClose => Message::WindowClose,
             Action::WindowNew => Message::WindowNew,
         }
-    }
-}
-
-impl MenuAction for NavMenuAction {
-    type Message = cosmic::app::Message<Message>;
-
-    fn message(&self, _entity: Option<Entity>) -> Self::Message {
-        cosmic::app::Message::App(Message::NavMenuAction(*self))
     }
 }
 
@@ -78,8 +75,7 @@ impl Application for CosmicBackups {
 
     /// This is the header of your application, it can be used to display the title of your application.
     fn header_center(&self) -> Vec<Element<Self::Message>> {
-        vec![menu::menu_bar(&self.key_binds)];
-        vec![widget::text::heading(fl!("app-title")).into()]
+        vec![menu::menu_bar(&self.key_binds)]
     }
 
     /// This is the entry point of your application, it is where you initialize your application.
@@ -89,10 +85,13 @@ impl Application for CosmicBackups {
     /// - `core` is used to passed on for you by libcosmic to use in the core of your own application.
     /// - `flags` is used to pass in any data that your application needs to use before it starts.
     /// - `Command` type is used to send messages to your application. `Command::none()` can be used to send no messages to your application.
-    fn init(core: Core, _flags: Self::Flags) -> (Self, Command<Self::Message>) {
-        let example = CosmicBackups { core };
+    fn init(core: Core, _input: Self::Flags) -> (Self, Command<Self::Message>) {
+        let app = CosmicBackups {
+            core,
+            key_binds: key_binds(),
+        };
 
-        (example, Command::none())
+        (app, Command::none())
     }
 
     /// This is the main view of your application, it is the root of your widget tree.
