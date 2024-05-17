@@ -6,8 +6,10 @@ use crate::fl;
 use cosmic::app::{Command, Core};
 use cosmic::iced::alignment::{Horizontal, Vertical};
 use cosmic::iced::Length;
+use cosmic::iced_core::keyboard::Key;
 use cosmic::widget::menu::action::MenuAction;
 use cosmic::widget::menu::key_bind::KeyBind;
+use cosmic::widget::menu::key_bind::Modifier;
 use cosmic::widget::segmented_button::Entity;
 use cosmic::{widget, Application, Element};
 
@@ -108,4 +110,25 @@ impl Application for CosmicBackups {
             .align_y(Vertical::Center)
             .into()
     }
+}
+
+pub fn key_binds() -> HashMap<KeyBind, Action> {
+    let mut key_binds = HashMap::new();
+
+    macro_rules! bind {
+        ([$($modifier:ident),* $(,)?], $key:expr, $action:ident) => {{
+            key_binds.insert(
+                KeyBind {
+                    modifiers: vec![$(Modifier::$modifier),*],
+                    key: $key,
+                },
+                Action::$action,
+            );
+        }};
+    }
+
+    bind!([Ctrl], Key::Character("w".into()), WindowClose);
+    bind!([Ctrl, Shift], Key::Character("n".into()), WindowNew);
+
+    key_binds
 }
