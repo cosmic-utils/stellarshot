@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0"
 
+[build-dependencies]
+vergen = { version = "8", features = ["git", "gitcl"] }
+
 [dependencies]
 i18n-embed-fl = "0.8"
 once_cell = "1.19.0"

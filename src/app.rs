@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
-use std::collections::HashMap;
-
+use std::{
+    collections::{HashMap},
+    env,
+};
 use crate::fl;
 use cosmic::{
     app::{Command, Core},
