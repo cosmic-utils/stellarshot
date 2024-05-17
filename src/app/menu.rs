@@ -15,16 +15,25 @@ use crate::{
 
 pub fn menu_bar<'a>(key_binds: &HashMap<KeyBind, Action>) -> Element<'a, Message> {
     MenuBar::new(vec![Tree::with_children(
-        root(fl!("file")),
-        items(
-            key_binds,
-            vec![
-                Item::Button(fl!("new-window"), Action::WindowNew),
-                Item::Divider,
-                Item::Button(fl!("quit"), Action::WindowClose),
-            ],
+            root(fl!("file")),
+            items(
+                key_binds,
+                vec![
+                    Item::Button(fl!("new-window"), Action::WindowNew),
+                    Item::Button(fl!("quit"), Action::WindowClose),
+                ],
+            ),
         ),
-    )])
+        Tree::with_children(
+            root(fl!("edit")),
+            items(
+                key_binds,
+                vec![
+                    Item::Button(fl!("cut"), Action::Cut),
+                ],
+            ),
+        ),
+    ])
     .item_height(ItemHeight::Dynamic(40))
     .item_width(ItemWidth::Uniform(240))
     .spacing(4.0)

@@ -30,22 +30,25 @@ pub struct CosmicBackups {
 /// If your application does not need to send messages, you can use an empty enum or `()`.
 #[derive(Debug, Clone)]
 pub enum Message {
+    Cut(Option<Entity>),
     WindowClose,
     WindowNew,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Action {
+    Cut,
     WindowClose,
     WindowNew,
 }
 
 impl MenuAction for Action {
     type Message = Message;
-    fn message(&self, _entity_opt: Option<Entity>) -> Self::Message {
+    fn message(&self, entity_opt: Option<Entity>) -> Self::Message {
         match self {
             Action::WindowClose => Message::WindowClose,
             Action::WindowNew => Message::WindowNew,
+            Action::Cut => Message::Cut(entity_opt),
         }
     }
 }

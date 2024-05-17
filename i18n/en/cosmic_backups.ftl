@@ -7,3 +7,7 @@ welcome = Backup and backup often! ✨
 file = File
 new-window = New window
 quit = Quit
+
+## Edit
+edit = Edit
+cut = Cut
