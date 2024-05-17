@@ -6,7 +6,7 @@ use std::{
 };
 use crate::fl;
 use cosmic::{
-    app::{Command, Core},
+    app::{Command, Core, Message as CosmicMessage},
     cosmic_theme,
     iced::{Alignment, Length},
 };
@@ -76,67 +76,10 @@ impl MenuAction for Action {
     }
 }
 
-/// Implement the `Application` trait for your application.
-/// This is where you define the behavior of your application.
-///
-/// The `Application` trait requires you to define the following types and constants:
-/// - `Executor` is the executor that will be used to run your application.
-/// - `Flags` is the data that your application needs to use before it starts.
-/// - `Message` is the enum that contains all the possible variants that your application will need to transmit messages.
-/// - `APP_ID` is the unique identifier of your application.
-impl Application for CosmicBackups {
-    type Executor = cosmic::executor::Default;
-
-    type Flags = ();
-
-    type Message = Message;
-
-    const APP_ID: &'static str = "com.github.ahoneybun.CosmicBackups";
-
-    fn core(&self) -> &Core {
-        &self.core
+impl App {
+    fn update_config(&mut self) -> Command<CosmicMessage<Message>> {
+        app::command::set_theme(self.config.app_theme.theme())
     }
-
-    fn core_mut(&mut self) -> &mut Core {
-        &mut self.core
-    }
-
-    /// This is the header of your application, it can be used to display the title of your application.
-    fn header_start(&self) -> Vec<Element<Self::Message>> {
-        vec![menu::menu_bar(&self.key_binds)]
-    }
-
-    /// This is the entry point of your application, it is where you initialize your application.
-    ///
-    /// Any work that needs to be done before the application starts should be done here.
-    ///
-    /// - `core` is used to passed on for you by libcosmic to use in the core of your own application.
-    /// - `flags` is used to pass in any data that your application needs to use before it starts.
-    /// - `Command` type is used to send messages to your application. `Command::none()` can be used to send no messages to your application.
-    fn init(core: Core, _input: Self::Flags) -> (Self, Command<Self::Message>) {
-        let app = CosmicBackups {
-            core,
-            key_binds: key_binds(),
-        };
-
-        (app, Command::none())
-    }
-
-    /// This is the main view of your application, it is the root of your widget tree.
-    ///
-    /// The `Element` type is used to represent the visual elements of your application,
-    /// it has a `Message` associated with it, which dictates what type of message it can send.
-    ///
-    /// To get a better sense of which widgets are available, check out the `widget` module.
-    fn view(&self) -> Element<Self::Message> {
-        widget::container(widget::text::title1(fl!("welcome")))
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .align_x(Horizontal::Center)
-            .align_y(Vertical::Center)
-            .into()
-    }
-}
 
     fn about(&self) -> Element<Message> {
         let cosmic_theme::Spacing { space_xxs, .. } = cosmic::theme::active().cosmic().spacing;
@@ -169,6 +112,49 @@ impl Application for CosmicBackups {
         .spacing(space_xxs)
         .into()
     }
+}
+
+
+impl Application for App {
+    type Executor = cosmic::executor::Default;
+
+    type Flags = ();
+
+    type Message = Message;
+
+    const APP_ID: &'static str = "com.github.ahoneybun.CosmicBackups";
+
+    fn core(&self) -> &Core {
+        &self.core
+    }
+
+    fn core_mut(&mut self) -> &mut Core {
+        &mut self.core
+    }
+
+    /// This is the header of your application, it can be used to display the title of your application.
+    fn header_start(&self) -> Vec<Element<Self::Message>> {
+        vec![menu::menu_bar(&self.key_binds)]
+    }
+
+    fn init(core: Core, _input: Self::Flags) -> (Self, Command<Self::Message>) {
+        let app = CosmicBackups {
+            core,
+            key_binds: key_binds(),
+        };
+
+        (app, Command::none())
+    }
+
+    fn view(&self) -> Element<Self::Message> {
+        widget::container(widget::text::title1(fl!("welcome")))
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .align_x(Horizontal::Center)
+            .align_y(Vertical::Center)
+            .into()
+    }
+}
 
 pub fn key_binds() -> HashMap<KeyBind, Action> {
     let mut key_binds = HashMap::new();
