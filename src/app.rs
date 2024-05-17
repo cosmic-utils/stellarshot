@@ -5,9 +5,9 @@ use std::{
     env,
 };
 use crate::fl;
-use cosmic::app::{Command, Core, Message as CosmicMessage};
+use cosmic::app::{Command, Core};
 use cosmic::{
-    cosmic_theme,
+    cosmic_theme, ApplicationExt,
     iced::{Alignment, Length},
 };
 use cosmic::iced::alignment::{Horizontal, Vertical};
@@ -23,7 +23,7 @@ pub mod menu;
 
 /// This is the struct that represents your application.
 /// It is used to define the data that will be used by your application.
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct App {
     /// This is the core of your application, it is used to communicate with the Cosmic runtime.
     /// It is used to send messages to your application, and to access the resources of the Cosmic runtime.
@@ -151,6 +151,7 @@ impl Application for App {
     fn init(core: Core, _input: Self::Flags) -> (Self, Command<Self::Message>) {
         let app = App {
             core,
+            context_page: ContextPage::About,
             key_binds: key_binds(),
         };
 
@@ -168,48 +169,8 @@ impl Application for App {
     
     /// Handle application events here.
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
-        // Helper for updating config values efficiently
-        macro_rules! config_set {
-            ($name: ident, $value: expr) => {
-                match &self.config_handler {
-                    Some(config_handler) => {
-                        match paste::paste! { self.config.[<set_ $name>](config_handler, $value) } {
-                            Ok(_) => {}
-                            Err(err) => {
-                                log::warn!(
-                                    "failed to save config {:?}: {}",
-                                    stringify!($name),
-                                    err
-                                );
-                            }
-                        }
-                    }
-                    None => {
-                        self.config.$name = $value;
-                        log::warn!(
-                            "failed to save config {:?}: no config handler",
-                            stringify!($name)
-                        );
-                    }
-                }
-            };
-        }
         
         match message {    
-            Message::Key(modifiers, key) => {
-                let entity = self.tab_model.active();
-                for (key_bind, action) in self.key_binds.iter() {
-                    if key_bind.matches(modifiers, &key) {
-                        return self.update(action.message(Some(entity)));
-                    }
-                }
-            }
-            Message::LaunchUrl(url) => match open::that_detached(&url) {
-                Ok(()) => {}
-                Err(err) => {
-                    log::warn!("failed to open {:?}: {}", url, err);
-                }
-            },
             Message::ToggleContextPage(context_page) => {
                 //TODO: ensure context menus are closed
                 if self.context_page == context_page {
@@ -220,9 +181,11 @@ impl Application for App {
                 }
                 self.set_context_title(context_page.title());
             }
-            Message::WindowClose => {
-                return window::close(window::Id::MAIN);
-            }            
+        }
+
+        Command::none() 
+
+    }            
 }
 
 pub fn key_binds() -> HashMap<KeyBind, Action> {
