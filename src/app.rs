@@ -6,14 +6,14 @@ use crate::fl;
 use cosmic::{
     app::{Command, Core},
     cosmic_theme,
-    iced::{Alignment},
+    iced::{Alignment, Length},
 };
 use cosmic::iced::alignment::{Horizontal, Vertical};
-use cosmic::iced::Length;
 use cosmic::iced_core::keyboard::Key;
-use cosmic::widget::menu::action::MenuAction;
-use cosmic::widget::menu::key_bind::KeyBind;
-use cosmic::widget::menu::key_bind::Modifier;
+use cosmic::widget::menu::{
+    action::{MenuAction},
+    key_bind::{KeyBind, Modifier},
+};
 use cosmic::widget::segmented_button::Entity;
 use cosmic::{widget, Application, Element};
 
