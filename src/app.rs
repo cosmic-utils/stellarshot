@@ -5,8 +5,8 @@ use std::{
     env,
 };
 use crate::fl;
+use cosmic::app::{Command, Core, Message as CosmicMessage};
 use cosmic::{
-    app::{Command, Core, Message as CosmicMessage},
     cosmic_theme,
     iced::{Alignment, Length},
 };
@@ -24,10 +24,11 @@ pub mod menu;
 /// This is the struct that represents your application.
 /// It is used to define the data that will be used by your application.
 #[derive(Clone, Default)]
-pub struct CosmicBackups {
+pub struct App {
     /// This is the core of your application, it is used to communicate with the Cosmic runtime.
     /// It is used to send messages to your application, and to access the resources of the Cosmic runtime.
     core: Core,
+    context_page: ContextPage,
     key_binds: HashMap<KeyBind, Action>,
 }
 
@@ -77,9 +78,9 @@ impl MenuAction for Action {
 }
 
 impl App {
-    fn update_config(&mut self) -> Command<CosmicMessage<Message>> {
-        app::command::set_theme(self.config.app_theme.theme())
-    }
+//  fn update_config(&mut self) -> Command<CosmicMessage<Message>> {
+//      cosmic::app::command::set_theme(self.config.app_theme.theme())
+//  }
 
     fn about(&self) -> Element<Message> {
         let cosmic_theme::Spacing { space_xxs, .. } = cosmic::theme::active().cosmic().spacing;
@@ -112,6 +113,16 @@ impl App {
         .spacing(space_xxs)
         .into()
     }
+    
+    fn context_drawer(&self) -> Option<Element<Message>> {
+        if !self.core.window.show_context {
+            return None;
+        }
+
+        Some(match self.context_page {
+            ContextPage::About => self.about(),
+        })
+    }
 }
 
 
@@ -138,7 +149,7 @@ impl Application for App {
     }
 
     fn init(core: Core, _input: Self::Flags) -> (Self, Command<Self::Message>) {
-        let app = CosmicBackups {
+        let app = App {
             core,
             key_binds: key_binds(),
         };
@@ -154,6 +165,64 @@ impl Application for App {
             .align_y(Vertical::Center)
             .into()
     }
+    
+    /// Handle application events here.
+    fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
+        // Helper for updating config values efficiently
+        macro_rules! config_set {
+            ($name: ident, $value: expr) => {
+                match &self.config_handler {
+                    Some(config_handler) => {
+                        match paste::paste! { self.config.[<set_ $name>](config_handler, $value) } {
+                            Ok(_) => {}
+                            Err(err) => {
+                                log::warn!(
+                                    "failed to save config {:?}: {}",
+                                    stringify!($name),
+                                    err
+                                );
+                            }
+                        }
+                    }
+                    None => {
+                        self.config.$name = $value;
+                        log::warn!(
+                            "failed to save config {:?}: no config handler",
+                            stringify!($name)
+                        );
+                    }
+                }
+            };
+        }
+        
+        match message {    
+            Message::Key(modifiers, key) => {
+                let entity = self.tab_model.active();
+                for (key_bind, action) in self.key_binds.iter() {
+                    if key_bind.matches(modifiers, &key) {
+                        return self.update(action.message(Some(entity)));
+                    }
+                }
+            }
+            Message::LaunchUrl(url) => match open::that_detached(&url) {
+                Ok(()) => {}
+                Err(err) => {
+                    log::warn!("failed to open {:?}: {}", url, err);
+                }
+            },
+            Message::ToggleContextPage(context_page) => {
+                //TODO: ensure context menus are closed
+                if self.context_page == context_page {
+                    self.core.window.show_context = !self.core.window.show_context;
+                } else {
+                    self.context_page = context_page;
+                    self.core.window.show_context = true;
+                }
+                self.set_context_title(context_page.title());
+            }
+            Message::WindowClose => {
+                return window::close(window::Id::MAIN);
+            }            
 }
 
 pub fn key_binds() -> HashMap<KeyBind, Action> {
