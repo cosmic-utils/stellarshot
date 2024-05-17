@@ -3,7 +3,11 @@
 use std::collections::HashMap;
 
 use crate::fl;
-use cosmic::app::{Command, Core};
+use cosmic::{
+    app::{Command, Core},
+    cosmic_theme,
+    iced::{Alignment},
+};
 use cosmic::iced::alignment::{Horizontal, Vertical};
 use cosmic::iced::Length;
 use cosmic::iced_core::keyboard::Key;
@@ -31,12 +35,28 @@ pub struct CosmicBackups {
 #[derive(Debug, Clone)]
 pub enum Message {
     Cut(Option<Entity>),
+    ToggleContextPage(ContextPage),
+    LaunchUrl(String),
     WindowClose,
     WindowNew,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ContextPage {
+    About,
+}
+
+impl ContextPage {
+    fn title(&self) -> String {
+        match self {
+            Self::About => String::new(),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Action {
+    About,
     Cut,
     WindowClose,
     WindowNew,
@@ -46,9 +66,10 @@ impl MenuAction for Action {
     type Message = Message;
     fn message(&self, entity_opt: Option<Entity>) -> Self::Message {
         match self {
+            Action::About => Message::ToggleContextPage(ContextPage::About),
+            Action::Cut => Message::Cut(entity_opt),
             Action::WindowClose => Message::WindowClose,
             Action::WindowNew => Message::WindowNew,
-            Action::Cut => Message::Cut(entity_opt),
         }
     }
 }
@@ -114,6 +135,38 @@ impl Application for CosmicBackups {
             .into()
     }
 }
+
+    fn about(&self) -> Element<Message> {
+        let cosmic_theme::Spacing { space_xxs, .. } = cosmic::theme::active().cosmic().spacing;
+        let repository = "https://github.com/ahoneybun/cosmic-backups";
+        let hash = env!("VERGEN_GIT_SHA");
+        let short_hash: String = hash.chars().take(7).collect();
+        let date = env!("VERGEN_GIT_COMMIT_DATE");
+        widget::column::with_children(vec![
+                widget::svg(widget::svg::Handle::from_memory(
+                    &include_bytes!(
+                        "../res/icons/hicolor/128x128/apps/com.example.CosmicAppTemplate.svg"
+                    )[..],
+                ))
+                .into(),
+                widget::text::title3(fl!("cosmic-backups")).into(),
+                widget::button::link(repository)
+                    .on_press(Message::LaunchUrl(repository.to_string()))
+                    .padding(0)
+                    .into(),
+                widget::button::link(fl!(
+                    "git-description",
+                    hash = short_hash.as_str(),
+                    date = date
+                ))
+                    .on_press(Message::LaunchUrl(format!("{}/commits/{}", repository, hash)))
+                    .padding(0)
+                .into(),
+            ])
+        .align_items(Alignment::Center)
+        .spacing(space_xxs)
+        .into()
+    }
 
 pub fn key_binds() -> HashMap<KeyBind, Action> {
     let mut key_binds = HashMap::new();

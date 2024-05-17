@@ -33,6 +33,15 @@ pub fn menu_bar<'a>(key_binds: &HashMap<KeyBind, Action>) -> Element<'a, Message
                 ],
             ),
         ),
+        Tree::with_children(
+            root(fl!("view")),
+            items(
+                key_binds,
+                vec![
+                    Item::Button(fl!("menu-about"), Action::About),
+                ],
+            ),
+        ),
     ])
     .item_height(ItemHeight::Dynamic(40))
     .item_width(ItemWidth::Uniform(240))
