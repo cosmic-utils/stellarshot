@@ -4,7 +4,11 @@ use crate::fl;
 use cosmic::app::{Command, Core};
 use cosmic::iced::alignment::{Horizontal, Vertical};
 use cosmic::iced::Length;
+use cosmic::widget::menu::action::MenuAction;
+use cosmic::widget::segmented_button::Entity;
 use cosmic::{widget, Application, Element};
+
+pub mod menu;
 
 /// This is the struct that represents your application.
 /// It is used to define the data that will be used by your application.
@@ -19,7 +23,33 @@ pub struct CosmicBackups {
 /// This is used to communicate between the different parts of your application.
 /// If your application does not need to send messages, you can use an empty enum or `()`.
 #[derive(Debug, Clone)]
-pub enum Message {}
+pub enum Message {
+    NavMenuAction(NavMenuAction),
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Action {
+    WindowClose,
+    WindowNew,
+}
+
+impl MenuAction for Action {
+    type Message = Message;
+    fn message(&self, _entity_opt: Option<Entity>) -> Self::Message {
+        match self {
+            Action::WindowClose => Message::WindowClose,
+            Action::WindowNew => Message::WindowNew,
+        }
+    }
+}
+
+impl MenuAction for NavMenuAction {
+    type Message = cosmic::app::Message<Message>;
+
+    fn message(&self, _entity: Option<Entity>) -> Self::Message {
+        cosmic::app::Message::App(Message::NavMenuAction(*self))
+    }
+}
 
 /// Implement the `Application` trait for your application.
 /// This is where you define the behavior of your application.
@@ -48,6 +78,7 @@ impl Application for CosmicBackups {
 
     /// This is the header of your application, it can be used to display the title of your application.
     fn header_center(&self) -> Vec<Element<Self::Message>> {
+        vec![menu::menu_bar(&self.key_binds)];
         vec![widget::text::heading(fl!("app-title")).into()]
     }
 
