@@ -1,6 +1,6 @@
 # COSMIC Backups
 
-![main branch parameter](https://github.com/github/docs/actions/workflows/rust.yml/badge.svg?branch=main)
+![main branch parameter](https://github.com/ahoneybun/cosmic-backups/actions/workflows/rust.yml/badge.svg?branch=main)
 
 The current plan is to use Restic as the backend but for now the UI/UX is still being worked on. I have no idea if this will move forward past the init stage.
 
