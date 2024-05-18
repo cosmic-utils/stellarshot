@@ -6,7 +6,7 @@ use std::{
     process,
 };
 use crate::fl;
-use crate::config::AppTheme;
+use crate::config::{AppTheme, Config};
 use cosmic::app::{Command, Core};
 use cosmic::{
     cosmic_config, cosmic_theme, ApplicationExt,
@@ -66,6 +66,11 @@ impl ContextPage {
         }
     }
 }
+
+#[derive(Clone, Debug)]
+pub struct Flags {
+    pub config_handler: Option<cosmic_config::Config>,
+    pub config: config::CosmicBackupsConfig,}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Action {
