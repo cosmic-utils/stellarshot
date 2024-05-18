@@ -3,6 +3,7 @@
 use std::{
     collections::{HashMap},
     env,
+    process,
 };
 use crate::fl;
 use cosmic::app::{Command, Core};
@@ -11,6 +12,7 @@ use cosmic::{
     iced::{Alignment, Length},
 };
 use cosmic::iced::alignment::{Horizontal, Vertical};
+use cosmic::iced::window;
 use cosmic::iced_core::keyboard::Key;
 use cosmic::widget::menu::{
     action::{MenuAction},
@@ -37,7 +39,7 @@ pub struct App {
 /// If your application does not need to send messages, you can use an empty enum or `()`.
 #[derive(Debug, Clone)]
 pub enum Message {
-    Cut(Option<Entity>),
+    // Cut(Option<Entity>),
     ToggleContextPage(ContextPage),
     LaunchUrl(String),
     WindowClose,
@@ -60,17 +62,17 @@ impl ContextPage {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Action {
     About,
-    Cut,
+    // Cut,
     WindowClose,
     WindowNew,
 }
 
 impl MenuAction for Action {
     type Message = Message;
-    fn message(&self, entity_opt: Option<Entity>) -> Self::Message {
+    fn message(&self, _entity_opt: Option<Entity>) -> Self::Message {
         match self {
             Action::About => Message::ToggleContextPage(ContextPage::About),
-            Action::Cut => Message::Cut(entity_opt),
+            // Action::Cut => Message::Cut(entity_opt),
             Action::WindowClose => Message::WindowClose,
             Action::WindowNew => Message::WindowNew,
         }
@@ -114,15 +116,6 @@ impl App {
         .into()
     }
     
-    fn context_drawer(&self) -> Option<Element<Message>> {
-        if !self.core.window.show_context {
-            return None;
-        }
-
-        Some(match self.context_page {
-            ContextPage::About => self.about(),
-        })
-    }
 }
 
 
@@ -158,6 +151,16 @@ impl Application for App {
         (app, Command::none())
     }
 
+    fn context_drawer(&self) -> Option<Element<Message>> {
+        if !self.core.window.show_context {
+            return None;
+        }
+
+        Some(match self.context_page {
+            ContextPage::About => self.about(),
+        })
+    }
+
     fn view(&self) -> Element<Self::Message> {
         widget::container(widget::text::title1(fl!("welcome")))
             .width(Length::Fill)
@@ -181,6 +184,26 @@ impl Application for App {
                 }
                 self.set_context_title(context_page.title());
             }
+            Message::WindowClose => {
+                return window::close(window::Id::MAIN);
+            }
+            Message::WindowNew => match env::current_exe() {
+                Ok(exe) => match process::Command::new(&exe).spawn() {
+                    Ok(_child) => {}
+                    Err(err) => {
+                        eprintln!("failed to execute {:?}: {}", exe, err);
+                    }
+                },
+                Err(err) => {
+                    eprintln!("failed to get current executable path: {}", err);
+                }
+            },
+            Message::LaunchUrl(url) => match open::that_detached(&url) {
+                Ok(()) => {}
+                Err(err) => {
+                    log::warn!("failed to open {:?}: {}", url, err);
+                }
+            },
         }
 
         Command::none() 

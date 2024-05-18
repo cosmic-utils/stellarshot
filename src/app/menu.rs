@@ -24,15 +24,15 @@ pub fn menu_bar<'a>(key_binds: &HashMap<KeyBind, Action>) -> Element<'a, Message
                 ],
             ),
         ),
-        Tree::with_children(
-            root(fl!("edit")),
-            items(
-                key_binds,
-                vec![
-                    Item::Button(fl!("cut"), Action::Cut),
-                ],
-            ),
-        ),
+        // Tree::with_children(
+        //     root(fl!("edit")),
+        //     items(
+        //         key_binds,
+        //         vec![
+        //             Item::Button(fl!("cut"), Action::Cut),
+        //         ],
+        //     ),
+        // ),
         Tree::with_children(
             root(fl!("view")),
             items(
