@@ -38,6 +38,8 @@ pub fn menu_bar<'a>(key_binds: &HashMap<KeyBind, Action>) -> Element<'a, Message
             items(
                 key_binds,
                 vec![
+                    Item::Button(fl!("menu-settings"), Action::Settings),
+                    Item::Divider,
                     Item::Button(fl!("menu-about"), Action::About),
                 ],
             ),
