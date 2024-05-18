@@ -5,7 +5,18 @@ welcome = Backup and backup often! ✨
 # Context Pages
 
 ## About
+about = About
 git-description = Git commit {$hash}  on {$date}
+
+## Settings
+settings = Settings
+
+### Appearance
+appearance = Appearance
+theme = Theme
+match-desktop = Match desktop
+dark = Dark
+light = Light
 
 # Menu
 

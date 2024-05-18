@@ -6,9 +6,10 @@ use std::{
     process,
 };
 use crate::fl;
+use crate::config::AppTheme;
 use cosmic::app::{Command, Core};
 use cosmic::{
-    cosmic_theme, ApplicationExt,
+    cosmic_config, cosmic_theme, ApplicationExt,
     iced::{Alignment, Length},
 };
 use cosmic::iced::alignment::{Horizontal, Vertical};
@@ -30,6 +31,9 @@ pub struct App {
     /// This is the core of your application, it is used to communicate with the Cosmic runtime.
     /// It is used to send messages to your application, and to access the resources of the Cosmic runtime.
     core: Core,
+    config_handler: Option<cosmic_config::Config>,
+    config: config::CosmicBackupsConfig,
+    app_themes: Vec<String>,
     context_page: ContextPage,
     key_binds: HashMap<KeyBind, Action>,
 }
@@ -42,6 +46,8 @@ pub enum Message {
     // Cut(Option<Entity>),
     ToggleContextPage(ContextPage),
     LaunchUrl(String),
+    AppTheme(usize),
+    SystemThemeModeChange(cosmic_theme::ThemeMode),
     WindowClose,
     WindowNew,
 }
@@ -49,12 +55,14 @@ pub enum Message {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ContextPage {
     About,
+    Settings,
 }
 
 impl ContextPage {
     fn title(&self) -> String {
         match self {
-            Self::About => String::new(),
+            Self::About => fl!("about"),
+            Self::Settings => fl!("settings"),
         }
     }
 }
@@ -63,6 +71,7 @@ impl ContextPage {
 pub enum Action {
     About,
     // Cut,
+    Settings,
     WindowClose,
     WindowNew,
 }
@@ -73,6 +82,7 @@ impl MenuAction for Action {
         match self {
             Action::About => Message::ToggleContextPage(ContextPage::About),
             // Action::Cut => Message::Cut(entity_opt),
+            Action::Settings => Message::ToggleContextPage(ContextPage::Settings),
             Action::WindowClose => Message::WindowClose,
             Action::WindowNew => Message::WindowNew,
         }
@@ -116,6 +126,24 @@ impl App {
         .into()
     }
     
+    fn settings(&self) -> Element<Message> {
+        let app_theme_selected = match self.config.app_theme {
+            AppTheme::Dark => 1,
+            AppTheme::Light => 2,
+            AppTheme::System => 0,
+        };
+        widget::settings::view_column(vec![widget::settings::view_section(fl!("appearance"))
+            .add(
+                widget::settings::item::builder(fl!("theme")).control(widget::dropdown(
+                    &self.app_themes,
+                    Some(app_theme_selected),
+                    Message::AppTheme,
+                )),
+            )
+            .into()])
+        .into()
+    }
+
 }
 
 
@@ -144,7 +172,10 @@ impl Application for App {
     fn init(core: Core, _input: Self::Flags) -> (Self, Command<Self::Message>) {
         let app = App {
             core,
-            context_page: ContextPage::About,
+            context_page: ContextPage::Settings,
+            config_handler: flags.config_handler,
+            config: flags.config,
+            app_themes: vec![fl!("match-desktop"), fl!("dark"), fl!("light")],
             key_binds: key_binds(),
         };
 
@@ -158,6 +189,7 @@ impl Application for App {
 
         Some(match self.context_page {
             ContextPage::About => self.about(),
+            ContextPage::Settings => self.settings(),
         })
     }
 
@@ -197,13 +229,25 @@ impl Application for App {
                 Err(err) => {
                     eprintln!("failed to get current executable path: {}", err);
                 }
-            },
+            }
             Message::LaunchUrl(url) => match open::that_detached(&url) {
                 Ok(()) => {}
                 Err(err) => {
                     log::warn!("failed to open {:?}: {}", url, err);
                 }
-            },
+            }
+            Message::AppTheme(index) => {
+                let app_theme = match index {
+                    1 => AppTheme::Dark,
+                    2 => AppTheme::Light,
+                    _ => AppTheme::System,
+                };
+                config_set!(app_theme, app_theme);
+                return self.update_config();
+            }
+            Message::SystemThemeModeChange(_) => {
+                return self.update_config();
+            }
         }
 
         Command::none() 
