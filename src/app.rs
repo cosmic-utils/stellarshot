@@ -1,27 +1,25 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
-use std::{
-    collections::{HashMap},
-    env,
-    process,
-};
+use crate::app::config::AppTheme;
 use crate::fl;
-use crate::config::{AppTheme, Config};
 use cosmic::app::{Command, Core};
-use cosmic::{
-    cosmic_config, cosmic_theme, ApplicationExt,
-    iced::{Alignment, Length},
-};
 use cosmic::iced::alignment::{Horizontal, Vertical};
 use cosmic::iced::window;
 use cosmic::iced_core::keyboard::Key;
 use cosmic::widget::menu::{
-    action::{MenuAction},
+    action::MenuAction,
     key_bind::{KeyBind, Modifier},
 };
 use cosmic::widget::segmented_button::Entity;
+use cosmic::{
+    cosmic_config, cosmic_theme,
+    iced::{Alignment, Length},
+    ApplicationExt,
+};
 use cosmic::{widget, Application, Element};
+use std::{collections::HashMap, env, process};
 
+pub mod config;
 pub mod menu;
 
 /// This is the struct that represents your application.
@@ -70,7 +68,8 @@ impl ContextPage {
 #[derive(Clone, Debug)]
 pub struct Flags {
     pub config_handler: Option<cosmic_config::Config>,
-    pub config: config::CosmicBackupsConfig,}
+    pub config: config::CosmicBackupsConfig,
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Action {
@@ -95,9 +94,9 @@ impl MenuAction for Action {
 }
 
 impl App {
-//  fn update_config(&mut self) -> Command<CosmicMessage<Message>> {
-//      cosmic::app::command::set_theme(self.config.app_theme.theme())
-//  }
+    fn update_config(&mut self) -> Command<Message> {
+        cosmic::app::command::set_theme(self.config.app_theme.theme())
+    }
 
     fn about(&self) -> Element<Message> {
         let cosmic_theme::Spacing { space_xxs, .. } = cosmic::theme::active().cosmic().spacing;
@@ -106,31 +105,34 @@ impl App {
         let short_hash: String = hash.chars().take(7).collect();
         let date = env!("VERGEN_GIT_COMMIT_DATE");
         widget::column::with_children(vec![
-                widget::svg(widget::svg::Handle::from_memory(
-                    &include_bytes!(
-                        "../res/icons/hicolor/128x128/apps/com.example.CosmicAppTemplate.svg"
-                    )[..],
-                ))
+            widget::svg(widget::svg::Handle::from_memory(
+                &include_bytes!(
+                    "../res/icons/hicolor/128x128/apps/com.example.CosmicAppTemplate.svg"
+                )[..],
+            ))
+            .into(),
+            widget::text::title3(fl!("cosmic-backups")).into(),
+            widget::button::link(repository)
+                .on_press(Message::LaunchUrl(repository.to_string()))
+                .padding(0)
                 .into(),
-                widget::text::title3(fl!("cosmic-backups")).into(),
-                widget::button::link(repository)
-                    .on_press(Message::LaunchUrl(repository.to_string()))
-                    .padding(0)
-                    .into(),
-                widget::button::link(fl!(
-                    "git-description",
-                    hash = short_hash.as_str(),
-                    date = date
-                ))
-                    .on_press(Message::LaunchUrl(format!("{}/commits/{}", repository, hash)))
-                    .padding(0)
-                .into(),
-            ])
+            widget::button::link(fl!(
+                "git-description",
+                hash = short_hash.as_str(),
+                date = date
+            ))
+            .on_press(Message::LaunchUrl(format!(
+                "{}/commits/{}",
+                repository, hash
+            )))
+            .padding(0)
+            .into(),
+        ])
         .align_items(Alignment::Center)
         .spacing(space_xxs)
         .into()
     }
-    
+
     fn settings(&self) -> Element<Message> {
         let app_theme_selected = match self.config.app_theme {
             AppTheme::Dark => 1,
@@ -148,14 +150,12 @@ impl App {
             .into()])
         .into()
     }
-
 }
-
 
 impl Application for App {
     type Executor = cosmic::executor::Default;
 
-    type Flags = ();
+    type Flags = Flags;
 
     type Message = Message;
 
@@ -174,7 +174,7 @@ impl Application for App {
         vec![menu::menu_bar(&self.key_binds)]
     }
 
-    fn init(core: Core, _input: Self::Flags) -> (Self, Command<Self::Message>) {
+    fn init(core: Core, flags: Self::Flags) -> (Self, Command<Self::Message>) {
         let app = App {
             core,
             context_page: ContextPage::Settings,
@@ -206,11 +206,37 @@ impl Application for App {
             .align_y(Vertical::Center)
             .into()
     }
-    
+
     /// Handle application events here.
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
-        
-        match message {    
+        // Helper for updating config values efficiently
+        macro_rules! config_set {
+            ($name: ident, $value: expr) => {
+                match &self.config_handler {
+                    Some(config_handler) => {
+                        match paste::paste! { self.config.[<set_ $name>](config_handler, $value) } {
+                            Ok(_) => {}
+                            Err(err) => {
+                                log::warn!(
+                                    "failed to save config {:?}: {}",
+                                    stringify!($name),
+                                    err
+                                );
+                            }
+                        }
+                    }
+                    None => {
+                        self.config.$name = $value;
+                        log::warn!(
+                            "failed to save config {:?}: no config handler",
+                            stringify!($name)
+                        );
+                    }
+                }
+            };
+        }
+
+        match message {
             Message::ToggleContextPage(context_page) => {
                 //TODO: ensure context menus are closed
                 if self.context_page == context_page {
@@ -234,13 +260,13 @@ impl Application for App {
                 Err(err) => {
                     eprintln!("failed to get current executable path: {}", err);
                 }
-            }
+            },
             Message::LaunchUrl(url) => match open::that_detached(&url) {
                 Ok(()) => {}
                 Err(err) => {
                     log::warn!("failed to open {:?}: {}", url, err);
                 }
-            }
+            },
             Message::AppTheme(index) => {
                 let app_theme = match index {
                     1 => AppTheme::Dark,
@@ -255,9 +281,8 @@ impl Application for App {
             }
         }
 
-        Command::none() 
-
-    }            
+        Command::none()
+    }
 }
 
 pub fn key_binds() -> HashMap<KeyBind, Action> {
