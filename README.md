@@ -4,7 +4,7 @@
 
 The current plan is to use Restic as the backend but for now the UI/UX is still being worked on. I have no idea if this will move forward past the init stage.
 
-![COSMIC Backups](COSMIC-Backups.png)
+![COSMIC Backups](screenshots/COSMIC-Backups-Dark.png)
 
 ## Install
 
