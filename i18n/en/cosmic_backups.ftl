@@ -22,6 +22,8 @@ light = Light
 
 ## File
 file = File
+new-repo = New repository
+new-snap = Create snapshot
 new-window = New window
 quit = Quit
 

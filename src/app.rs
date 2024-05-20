@@ -46,6 +46,8 @@ pub enum Message {
     LaunchUrl(String),
     AppTheme(usize),
     SystemThemeModeChange(cosmic_theme::ThemeMode),
+    NewRepo,
+    NewSnap,
     WindowClose,
     WindowNew,
 }
@@ -74,6 +76,8 @@ pub struct Flags {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Action {
     About,
+    NewRepo,
+    NewSnap,
     // Cut,
     Settings,
     WindowClose,
@@ -86,6 +90,8 @@ impl MenuAction for Action {
         match self {
             Action::About => Message::ToggleContextPage(ContextPage::About),
             // Action::Cut => Message::Cut(entity_opt),
+            Action::NewRepo => Message::NewRepo,
+            Action::NewSnap => Message::NewSnap,
             Action::Settings => Message::ToggleContextPage(ContextPage::Settings),
             Action::WindowClose => Message::WindowClose,
             Action::WindowNew => Message::WindowNew,
@@ -246,6 +252,12 @@ impl Application for App {
                     self.core.window.show_context = true;
                 }
                 self.set_context_title(context_page.title());
+            }
+            Message::NewRepo => {
+                println!("created restic repository");
+            }
+            Message::NewSnap => {
+                println!("snapshot saved");
             }
             Message::WindowClose => {
                 return window::close(window::Id::MAIN);

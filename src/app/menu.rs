@@ -20,6 +20,8 @@ pub fn menu_bar<'a>(key_binds: &HashMap<KeyBind, Action>) -> Element<'a, Message
             items(
                 key_binds,
                 vec![
+                    Item::Button(fl!("new-repo"), Action::NewRepo),
+                    Item::Button(fl!("new-snap"), Action::NewSnap),
                     Item::Button(fl!("new-window"), Action::WindowNew),
                     Item::Button(fl!("quit"), Action::WindowClose),
                 ],
