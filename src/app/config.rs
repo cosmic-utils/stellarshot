@@ -20,13 +20,13 @@ impl CosmicBackupsConfig {
     pub fn config() -> CosmicBackupsConfig {
         match Self::config_handler() {
             Some(config_handler) => {
-                let config = CosmicBackupsConfig::get_entry(&config_handler).unwrap_or_else(
+                
+                CosmicBackupsConfig::get_entry(&config_handler).unwrap_or_else(
                     |(errs, config)| {
                         log::info!("errors loading config: {:?}", errs);
                         config
                     },
-                );
-                config
+                )
             }
             None => CosmicBackupsConfig::default(),
         }

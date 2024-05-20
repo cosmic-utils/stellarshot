@@ -14,7 +14,8 @@ use crate::{
 };
 
 pub fn menu_bar<'a>(key_binds: &HashMap<KeyBind, Action>) -> Element<'a, Message> {
-    MenuBar::new(vec![Tree::with_children(
+    MenuBar::new(vec![
+        Tree::with_children(
             root(fl!("file")),
             items(
                 key_binds,
