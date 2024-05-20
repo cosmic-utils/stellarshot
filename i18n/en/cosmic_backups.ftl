@@ -2,6 +2,13 @@ cosmic-backups = COSMIC Backups
 app-title = COSMIC Backups
 welcome = Backup and backup often! ✨
 
+# Dialogs
+create-repo = Create a new repository
+save = Save
+cancel = Cancel
+confirm = Confirm
+repo-location = Repository location
+
 # Context Pages
 
 ## About
