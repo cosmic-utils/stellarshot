@@ -6,6 +6,7 @@ use cosmic::app::Settings;
 
 /// The `app` module is used by convention to indicate the main component of our application.
 mod app;
+mod backup;
 mod core;
 
 /// The `cosmic::app::run()` function is the starting point of your application.
