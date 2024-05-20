@@ -315,6 +315,10 @@ impl Application for App {
                     }
                 }
             }
+            Message::DialogUpdate(dialog_page) => {
+                //TODO: panicless way to do this?
+                self.dialog_pages[0] = dialog_page;
+            }
             Message::WindowClose => {
                 return window::close(window::Id::MAIN);
             }
@@ -372,6 +376,8 @@ pub fn key_binds() -> HashMap<KeyBind, Action> {
         }};
     }
 
+    bind!([Ctrl], Key::Character("r".into()), NewRepo);
+    bind!([Ctrl, Shift], Key::Character("r".into()), NewSnap);
     bind!([Ctrl], Key::Character("w".into()), WindowClose);
     bind!([Ctrl, Shift], Key::Character("n".into()), WindowNew);
 
