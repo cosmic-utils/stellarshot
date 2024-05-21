@@ -334,10 +334,6 @@ impl Application for App {
                     eprintln!("failed to get current executable path: {}", err);
                 }
             }
-            Message::DialogUpdate(dialog_page) => {
-                //TODO: panicless way to do this?
-                self.dialog_pages[0] = dialog_page;
-            }
             Message::LaunchUrl(url) => match open::that_detached(&url) {
                 Ok(()) => {}
                 Err(err) => {
