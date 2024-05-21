@@ -59,6 +59,8 @@ pub enum Message {
     CreateSnapshot,
     OpenCreateRepositoryDialog,
     OpenCreateSnapshotDialog,
+    DeleteRepositoryDialog,
+    DeleteSnapshotDialog,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -93,6 +95,8 @@ pub enum Action {
     About,
     CreateRepository,
     CreateSnapshot,
+    DeleteRepository,
+    DeleteSnapshot,
     Settings,
     WindowClose,
     WindowNew,
@@ -105,6 +109,8 @@ impl MenuAction for Action {
             Action::About => Message::ToggleContextPage(ContextPage::About),
             Action::CreateRepository => Message::OpenCreateRepositoryDialog,
             Action::CreateSnapshot => Message::OpenCreateSnapshotDialog,
+            Action::DeleteRepository => Message::DeleteRepositoryDialog,
+            Action::DeleteSnapshot => Message::DeleteSnapshotDialog,
             Action::Settings => Message::ToggleContextPage(ContextPage::Settings),
             Action::WindowClose => Message::WindowClose,
             Action::WindowNew => Message::WindowNew,
@@ -377,6 +383,12 @@ impl Application for App {
                     eprintln!("failed to create repository: {}", e)
                 }
             },
+            Message::DeleteRepositoryDialog => {
+                println!("Deleting repository");
+            }
+            Message::DeleteSnapshotDialog => {
+                println!("Deleting snapshot");
+            }
             Message::CreateSnapshot => {
                 if let Some(repository) = &self.selected_repository {
                     let Some(path) = repository.path.to_str() else {
