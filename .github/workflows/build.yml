@@ -20,5 +20,7 @@ jobs:
       run: sudo apt-get install -y libxkbcommon-dev
     - name: Build
       run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose
+    - name: Run init test
+      run: cargo test init --verbose
+    - name: Run snapshot test
+      run: cargo test snapshot --verbose
