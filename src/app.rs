@@ -2,7 +2,7 @@
 
 use crate::app::config::AppTheme;
 use crate::fl;
-use cosmic::app::{message, Command, Core};
+use cosmic::app::{Command, Core};
 use cosmic::iced::alignment::{Horizontal, Vertical};
 use cosmic::iced::window;
 use cosmic::iced_core::keyboard::Key;
@@ -97,7 +97,7 @@ pub enum Action {
 
 impl MenuAction for Action {
     type Message = Message;
-    fn message(&self, _entity_opt: Option<Entity>) -> Self::Message {
+    fn message(&self) -> Self::Message {
         match self {
             Action::About => Message::ToggleContextPage(ContextPage::About),
             // Action::Cut => Message::Cut(entity_opt),
