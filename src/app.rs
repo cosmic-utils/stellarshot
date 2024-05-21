@@ -17,7 +17,8 @@ use cosmic::{
     ApplicationExt,
 };
 use cosmic::{widget, Application, Element};
-use std::{collections::HashMap, env, process};
+use std::collections::{HashMap, VecDeque};
+use std::{env, process};
 
 pub mod config;
 pub mod menu;
@@ -29,10 +30,12 @@ pub struct App {
     /// This is the core of your application, it is used to communicate with the Cosmic runtime.
     /// It is used to send messages to your application, and to access the resources of the Cosmic runtime.
     core: Core,
+    app_themes: Vec<String>,
     config_handler: Option<cosmic_config::Config>,
     config: config::CosmicBackupsConfig,
-    app_themes: Vec<String>,
     context_page: ContextPage,
+    dialog_pages: VecDeque<DialogPage>,
+    dialog_text_input: widget::Id,
     key_binds: HashMap<KeyBind, Action>,
 }
 
@@ -42,10 +45,15 @@ pub struct App {
 #[derive(Debug, Clone)]
 pub enum Message {
     // Cut(Option<Entity>),
+    DialogCancel,
+    DialogComplete,
+    DialogUpdate(DialogPage),
     ToggleContextPage(ContextPage),
     LaunchUrl(String),
+    OpenNewRepoDialog,
     AppTheme(usize),
     SystemThemeModeChange(cosmic_theme::ThemeMode),
+    NewSnap,
     WindowClose,
     WindowNew,
 }
@@ -65,6 +73,11 @@ impl ContextPage {
     }
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum DialogPage {
+    NewRepo(String),
+}
+
 #[derive(Clone, Debug)]
 pub struct Flags {
     pub config_handler: Option<cosmic_config::Config>,
@@ -74,6 +87,8 @@ pub struct Flags {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Action {
     About,
+    NewRepo,
+    NewSnap,
     // Cut,
     Settings,
     WindowClose,
@@ -82,10 +97,12 @@ pub enum Action {
 
 impl MenuAction for Action {
     type Message = Message;
-    fn message(&self, _entity_opt: Option<Entity>) -> Self::Message {
+    fn message(&self) -> Self::Message {
         match self {
             Action::About => Message::ToggleContextPage(ContextPage::About),
             // Action::Cut => Message::Cut(entity_opt),
+            Action::NewRepo => Message::OpenNewRepoDialog,
+            Action::NewSnap => Message::NewSnap,
             Action::Settings => Message::ToggleContextPage(ContextPage::Settings),
             Action::WindowClose => Message::WindowClose,
             Action::WindowNew => Message::WindowNew,
@@ -177,10 +194,12 @@ impl Application for App {
     fn init(core: Core, flags: Self::Flags) -> (Self, Command<Self::Message>) {
         let app = App {
             core,
+            app_themes: vec![fl!("match-desktop"), fl!("dark"), fl!("light")],
             context_page: ContextPage::Settings,
             config_handler: flags.config_handler,
             config: flags.config,
-            app_themes: vec![fl!("match-desktop"), fl!("dark"), fl!("light")],
+            dialog_pages: VecDeque::new(),
+            dialog_text_input: widget::Id::unique(),
             key_binds: key_binds(),
         };
 
@@ -196,6 +215,38 @@ impl Application for App {
             ContextPage::About => self.about(),
             ContextPage::Settings => self.settings(),
         })
+    }
+
+    fn dialog(&self) -> Option<Element<Message>> {
+        let dialog_page = match self.dialog_pages.front() {
+            Some(some) => some,
+            None => return None,
+        };
+
+        let spacing = cosmic::theme::active().cosmic().spacing;
+
+        let dialog = match dialog_page {
+            DialogPage::NewRepo(name) => widget::dialog(fl!("create-repo"))
+                .primary_action(
+                    widget::button::suggested(fl!("save"))
+                        .on_press_maybe(Some(Message::DialogComplete)),
+                )
+                .secondary_action(
+                    widget::button::standard(fl!("cancel")).on_press(Message::DialogCancel),
+                )
+                .control(
+                    widget::column::with_children(vec![
+                        widget::text::body(fl!("repo-location")).into(),
+                        widget::text_input("", name.as_str())
+                            .id(self.dialog_text_input.clone())
+                            .on_input(move |name| Message::DialogUpdate(DialogPage::NewRepo(name)))
+                            .into(),
+                    ])
+                    .spacing(spacing.space_xxs),
+                ),
+        };
+
+        Some(dialog.into())
     }
 
     fn view(&self) -> Element<Self::Message> {
@@ -247,6 +298,28 @@ impl Application for App {
                 }
                 self.set_context_title(context_page.title());
             }
+            Message::OpenNewRepoDialog => {
+                self.dialog_pages.push_back(DialogPage::NewRepo(String::new()));
+                return widget::text_input::focus(self.dialog_text_input.clone());
+            }
+            Message::NewSnap => {
+                println!("snapshot saved");
+            }
+            Message::DialogCancel => {
+                self.dialog_pages.pop_front();
+            }
+            Message::DialogComplete => {
+                if let Some(dialog_page) = self.dialog_pages.pop_front() {
+                    match dialog_page {
+                        DialogPage::NewRepo(name) => {
+                        }
+                    }
+                }
+            }
+            Message::DialogUpdate(dialog_page) => {
+                //TODO: panicless way to do this?
+                self.dialog_pages[0] = dialog_page;
+            }
             Message::WindowClose => {
                 return window::close(window::Id::MAIN);
             }
@@ -260,7 +333,7 @@ impl Application for App {
                 Err(err) => {
                     eprintln!("failed to get current executable path: {}", err);
                 }
-            },
+            }
             Message::LaunchUrl(url) => match open::that_detached(&url) {
                 Ok(()) => {}
                 Err(err) => {
@@ -300,6 +373,8 @@ pub fn key_binds() -> HashMap<KeyBind, Action> {
         }};
     }
 
+    bind!([Ctrl], Key::Character("r".into()), NewRepo);
+    bind!([Ctrl, Shift], Key::Character("r".into()), NewSnap);
     bind!([Ctrl], Key::Character("w".into()), WindowClose);
     bind!([Ctrl, Shift], Key::Character("n".into()), WindowNew);
 
