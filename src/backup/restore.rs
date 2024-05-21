@@ -2,7 +2,7 @@ use rustic_backend::BackendOptions;
 use rustic_core::{LocalDestination, LsOptions, Repository, RepositoryOptions, RestoreOptions};
 use std::error::Error;
 
-fn restore(
+pub fn restore(
     repository: &str,
     password: &str,
     snap_path: &str,
