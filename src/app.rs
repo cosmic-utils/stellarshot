@@ -75,7 +75,7 @@ impl ContextPage {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DialogPage {
-    New(String),
+    NewRepo(String),
 }
 
 #[derive(Clone, Debug)]
@@ -226,7 +226,7 @@ impl Application for App {
         let spacing = cosmic::theme::active().cosmic().spacing;
 
         let dialog = match dialog_page {
-            DialogPage::New(name) => widget::dialog(fl!("create-repo"))
+            DialogPage::NewRepo(name) => widget::dialog(fl!("create-repo"))
                 .primary_action(
                     widget::button::suggested(fl!("save"))
                         .on_press_maybe(Some(Message::DialogComplete)),
@@ -239,7 +239,7 @@ impl Application for App {
                         widget::text::body(fl!("repo-location")).into(),
                         widget::text_input("", name.as_str())
                             .id(self.dialog_text_input.clone())
-                            .on_input(move |name| Message::DialogUpdate(DialogPage::New(name)))
+                            .on_input(move |name| Message::DialogUpdate(DialogPage::NewRepo(name)))
                             .into(),
                     ])
                     .spacing(spacing.space_xxs),
@@ -299,7 +299,7 @@ impl Application for App {
                 self.set_context_title(context_page.title());
             }
             Message::OpenNewRepoDialog => {
-                self.dialog_pages.push_back(DialogPage::New(String::new()));
+                self.dialog_pages.push_back(DialogPage::NewRepo(String::new()));
                 return widget::text_input::focus(self.dialog_text_input.clone());
             }
             Message::NewSnap => {
@@ -311,7 +311,8 @@ impl Application for App {
             Message::DialogComplete => {
                 if let Some(dialog_page) = self.dialog_pages.pop_front() {
                     match dialog_page {
-                        DialogPage::New(name) => {}
+                        DialogPage::NewRepo(name) => {
+                        }
                     }
                 }
             }
