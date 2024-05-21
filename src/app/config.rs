@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::app::App;
 use cosmic::{
     cosmic_config::{self, cosmic_config_derive::CosmicConfigEntry, Config, CosmicConfigEntry},
@@ -10,6 +12,7 @@ pub const CONFIG_VERSION: u64 = 1;
 #[derive(Clone, Default, Debug, Eq, PartialEq, Deserialize, Serialize, CosmicConfigEntry)]
 pub struct CosmicBackupsConfig {
     pub app_theme: AppTheme,
+    pub repositories: Vec<Repository>,
 }
 
 impl CosmicBackupsConfig {
@@ -20,17 +23,20 @@ impl CosmicBackupsConfig {
     pub fn config() -> CosmicBackupsConfig {
         match Self::config_handler() {
             Some(config_handler) => {
-                
-                CosmicBackupsConfig::get_entry(&config_handler).unwrap_or_else(
-                    |(errs, config)| {
-                        log::info!("errors loading config: {:?}", errs);
-                        config
-                    },
-                )
+                CosmicBackupsConfig::get_entry(&config_handler).unwrap_or_else(|(errs, config)| {
+                    log::info!("errors loading config: {:?}", errs);
+                    config
+                })
             }
             None => CosmicBackupsConfig::default(),
         }
     }
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+pub struct Repository {
+    pub name: String,
+    pub path: PathBuf,
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
-use crate::app::config::AppTheme;
+use crate::app::config::{AppTheme, Repository};
 use crate::fl;
 use cosmic::app::{Command, Core};
 use cosmic::iced::alignment::{Horizontal, Vertical};
@@ -10,14 +10,15 @@ use cosmic::widget::menu::{
     action::MenuAction,
     key_bind::{KeyBind, Modifier},
 };
-use cosmic::widget::segmented_button::Entity;
+use cosmic::widget::segmented_button::{self, EntityMut, SingleSelect};
 use cosmic::{
     cosmic_config, cosmic_theme,
     iced::{Alignment, Length},
     ApplicationExt,
 };
-use cosmic::{widget, Application, Element};
+use cosmic::{widget, Application, Apply, Element};
 use std::collections::{HashMap, VecDeque};
+use std::path::PathBuf;
 use std::{env, process};
 
 pub mod config;
@@ -25,11 +26,12 @@ pub mod menu;
 
 /// This is the struct that represents your application.
 /// It is used to define the data that will be used by your application.
-#[derive(Clone)]
 pub struct App {
     /// This is the core of your application, it is used to communicate with the Cosmic runtime.
     /// It is used to send messages to your application, and to access the resources of the Cosmic runtime.
     core: Core,
+    nav_model: segmented_button::SingleSelectModel,
+    selected_repository: Option<Repository>,
     app_themes: Vec<String>,
     config_handler: Option<cosmic_config::Config>,
     config: config::CosmicBackupsConfig,
@@ -44,18 +46,19 @@ pub struct App {
 /// If your application does not need to send messages, you can use an empty enum or `()`.
 #[derive(Debug, Clone)]
 pub enum Message {
-    // Cut(Option<Entity>),
     DialogCancel,
     DialogComplete,
     DialogUpdate(DialogPage),
     ToggleContextPage(ContextPage),
     LaunchUrl(String),
-    OpenNewRepoDialog,
     AppTheme(usize),
     SystemThemeModeChange(cosmic_theme::ThemeMode),
-    NewSnap,
     WindowClose,
     WindowNew,
+    CreateRepository(String),
+    CreateSnapshot,
+    OpenCreateRepositoryDialog,
+    OpenCreateSnapshotDialog,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -75,7 +78,8 @@ impl ContextPage {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DialogPage {
-    NewRepo(String),
+    CreateRepository(String),
+    CreateSnapshot,
 }
 
 #[derive(Clone, Debug)]
@@ -87,9 +91,8 @@ pub struct Flags {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Action {
     About,
-    NewRepo,
-    NewSnap,
-    // Cut,
+    CreateRepository,
+    CreateSnapshot,
     Settings,
     WindowClose,
     WindowNew,
@@ -100,9 +103,8 @@ impl MenuAction for Action {
     fn message(&self) -> Self::Message {
         match self {
             Action::About => Message::ToggleContextPage(ContextPage::About),
-            // Action::Cut => Message::Cut(entity_opt),
-            Action::NewRepo => Message::OpenNewRepoDialog,
-            Action::NewSnap => Message::NewSnap,
+            Action::CreateRepository => Message::OpenCreateRepositoryDialog,
+            Action::CreateSnapshot => Message::OpenCreateSnapshotDialog,
             Action::Settings => Message::ToggleContextPage(ContextPage::Settings),
             Action::WindowClose => Message::WindowClose,
             Action::WindowNew => Message::WindowNew,
@@ -167,6 +169,13 @@ impl App {
             .into()])
         .into()
     }
+
+    fn create_nav_item(&mut self, repository: Repository) -> EntityMut<SingleSelect> {
+        self.nav_model
+            .insert()
+            .text(repository.name.clone())
+            .data(repository.clone())
+    }
 }
 
 impl Application for App {
@@ -191,9 +200,16 @@ impl Application for App {
         vec![menu::menu_bar(&self.key_binds)]
     }
 
+    fn nav_model(&self) -> Option<&widget::nav_bar::Model> {
+        Some(&self.nav_model)
+    }
+
     fn init(core: Core, flags: Self::Flags) -> (Self, Command<Self::Message>) {
-        let app = App {
+        let nav_model = segmented_button::ModelBuilder::default().build();
+        let mut app = App {
             core,
+            nav_model,
+            selected_repository: None,
             app_themes: vec![fl!("match-desktop"), fl!("dark"), fl!("light")],
             context_page: ContextPage::Settings,
             config_handler: flags.config_handler,
@@ -202,6 +218,11 @@ impl Application for App {
             dialog_text_input: widget::Id::unique(),
             key_binds: key_binds(),
         };
+
+        let repositories = app.config.repositories.clone();
+        for repository in repositories {
+            app.create_nav_item(repository);
+        }
 
         (app, Command::none())
     }
@@ -226,7 +247,7 @@ impl Application for App {
         let spacing = cosmic::theme::active().cosmic().spacing;
 
         let dialog = match dialog_page {
-            DialogPage::NewRepo(name) => widget::dialog(fl!("create-repo"))
+            DialogPage::CreateRepository(name) => widget::dialog(fl!("create-repo"))
                 .primary_action(
                     widget::button::suggested(fl!("save"))
                         .on_press_maybe(Some(Message::DialogComplete)),
@@ -239,18 +260,50 @@ impl Application for App {
                         widget::text::body(fl!("repo-location")).into(),
                         widget::text_input("", name.as_str())
                             .id(self.dialog_text_input.clone())
-                            .on_input(move |name| Message::DialogUpdate(DialogPage::NewRepo(name)))
+                            .on_input(move |name| {
+                                Message::DialogUpdate(DialogPage::CreateRepository(name))
+                            })
                             .into(),
                     ])
                     .spacing(spacing.space_xxs),
+                ),
+            DialogPage::CreateSnapshot => widget::dialog(fl!("create-snapshot"))
+                .body(fl!("snapshot-description"))
+                .primary_action(
+                    widget::button::suggested(fl!("create"))
+                        .on_press_maybe(Some(Message::DialogComplete)),
+                )
+                .secondary_action(
+                    widget::button::standard(fl!("cancel")).on_press(Message::DialogCancel),
                 ),
         };
 
         Some(dialog.into())
     }
 
+    fn on_nav_select(&mut self, entity: widget::nav_bar::Id) -> Command<Self::Message> {
+        let mut commands = vec![];
+        self.nav_model.activate(entity);
+
+        if let Some(repository) = self.nav_model.data::<Repository>(entity) {
+            self.selected_repository = Some(repository.clone());
+            let window_title = format!("{} - {}", repository.name, fl!("cosmic-backups"));
+            commands.push(self.set_window_title(window_title));
+        }
+
+        Command::batch(commands)
+    }
+
     fn view(&self) -> Element<Self::Message> {
-        widget::container(widget::text::title1(fl!("welcome")))
+        let content: Element<Self::Message> = match &self.selected_repository {
+            Some(repository) => {
+                widget::text::title1(format!("Selected repository: {}", repository.name.clone()))
+                    .into()
+            }
+            None => widget::text::title1(fl!("welcome")).into(),
+        };
+        widget::container(content)
+            .apply(widget::container)
             .width(Length::Fill)
             .height(Length::Fill)
             .align_x(Horizontal::Center)
@@ -298,12 +351,45 @@ impl Application for App {
                 }
                 self.set_context_title(context_page.title());
             }
-            Message::OpenNewRepoDialog => {
-                self.dialog_pages.push_back(DialogPage::NewRepo(String::new()));
+            Message::OpenCreateRepositoryDialog => {
+                self.dialog_pages
+                    .push_back(DialogPage::CreateRepository(String::new()));
                 return widget::text_input::focus(self.dialog_text_input.clone());
             }
-            Message::NewSnap => {
-                println!("snapshot saved");
+            Message::OpenCreateSnapshotDialog => {
+                self.dialog_pages.push_back(DialogPage::CreateSnapshot);
+            }
+            Message::CreateRepository(path) => match crate::backup::init(&path, "password") {
+                Ok(_) => {
+                    let path = PathBuf::from(&path);
+                    let name = path
+                        .file_name()
+                        .unwrap_or_default()
+                        .to_string_lossy()
+                        .to_string();
+                    let repository = Repository { name, path };
+                    self.config.repositories.push(repository.clone());
+                    self.create_nav_item(repository);
+                    config_set!(repositories, self.config.repositories.clone());
+                }
+                Err(e) => {
+                    // TODO: Show error to user.
+                    eprintln!("failed to create repository: {}", e)
+                }
+            },
+            Message::CreateSnapshot => {
+                if let Some(repository) = &self.selected_repository {
+                    let Some(path) = repository.path.to_str() else {
+                        return Command::none();
+                    };
+                    match crate::backup::snapshot(path, "password", vec!["/etc"]) {
+                        Ok(_) => {}
+                        Err(e) => {
+                            // TODO: Show error to user.
+                            eprintln!("failed to create snapshot: {}", e)
+                        }
+                    }
+                }
             }
             Message::DialogCancel => {
                 self.dialog_pages.pop_front();
@@ -311,7 +397,11 @@ impl Application for App {
             Message::DialogComplete => {
                 if let Some(dialog_page) = self.dialog_pages.pop_front() {
                     match dialog_page {
-                        DialogPage::NewRepo(name) => {
+                        DialogPage::CreateRepository(name) => {
+                            return self.update(Message::CreateRepository(name));
+                        }
+                        DialogPage::CreateSnapshot => {
+                            return self.update(Message::CreateSnapshot);
                         }
                     }
                 }
@@ -333,7 +423,7 @@ impl Application for App {
                 Err(err) => {
                     eprintln!("failed to get current executable path: {}", err);
                 }
-            }
+            },
             Message::LaunchUrl(url) => match open::that_detached(&url) {
                 Ok(()) => {}
                 Err(err) => {
@@ -373,8 +463,8 @@ pub fn key_binds() -> HashMap<KeyBind, Action> {
         }};
     }
 
-    bind!([Ctrl], Key::Character("r".into()), NewRepo);
-    bind!([Ctrl, Shift], Key::Character("r".into()), NewSnap);
+    bind!([Ctrl], Key::Character("r".into()), CreateRepository);
+    bind!([Ctrl, Shift], Key::Character("r".into()), CreateSnapshot);
     bind!([Ctrl], Key::Character("w".into()), WindowClose);
     bind!([Ctrl, Shift], Key::Character("n".into()), WindowNew);
 

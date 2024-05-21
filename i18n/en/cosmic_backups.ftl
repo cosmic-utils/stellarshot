@@ -3,11 +3,14 @@ app-title = COSMIC Backups
 welcome = Backup and backup often! ✨
 
 # Dialogs
-create-repo = Create a new repository
 save = Save
+create = Create
 cancel = Cancel
 confirm = Confirm
+create-repo = Create a new repository
 repo-location = Repository location
+create-snapshot = Create a new snapshot
+snapshot-description = A snapshot is a point-in-time copy of your repository.
 
 # Context Pages
 
