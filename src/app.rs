@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
-use crate::app::config::{AppTheme, Repository};
-use crate::fl;
+use std::any::TypeId;
+use std::collections::{HashMap, VecDeque};
+use std::path::PathBuf;
+use std::{env, process};
+
 use cosmic::app::{Command, Core};
 use cosmic::iced::alignment::{Horizontal, Vertical};
-use cosmic::iced::window;
-use cosmic::iced_core::keyboard::Key;
+use cosmic::iced::{window, event, Event, keyboard::Event as KeyEvent, Subscription};
+use cosmic::iced_core::keyboard::{Key, Modifiers};
 use cosmic::widget::menu::{
     action::MenuAction,
     key_bind::{KeyBind, Modifier},
@@ -17,9 +20,9 @@ use cosmic::{
     ApplicationExt,
 };
 use cosmic::{widget, Application, Apply, Element};
-use std::collections::{HashMap, VecDeque};
-use std::path::PathBuf;
-use std::{env, process};
+
+use crate::app::config::{AppTheme, CONFIG_VERSION, Repository};
+use crate::fl;
 
 pub mod config;
 pub mod menu;
@@ -39,6 +42,7 @@ pub struct App {
     dialog_pages: VecDeque<DialogPage>,
     dialog_text_input: widget::Id,
     key_binds: HashMap<KeyBind, Action>,
+    modifiers: Modifiers,
 }
 
 /// This is the enum that contains all the possible variants that your application will need to transmit messages.
@@ -53,6 +57,8 @@ pub enum Message {
     LaunchUrl(String),
     AppTheme(usize),
     SystemThemeModeChange(cosmic_theme::ThemeMode),
+    Key(Modifiers, Key),
+    Modifiers(Modifiers),
     WindowClose,
     WindowNew,
     CreateRepository(String),
@@ -223,6 +229,7 @@ impl Application for App {
             dialog_pages: VecDeque::new(),
             dialog_text_input: widget::Id::unique(),
             key_binds: key_binds(),
+            modifiers: Modifiers::empty(),
         };
 
         let repositories = app.config.repositories.clone();
@@ -315,6 +322,58 @@ impl Application for App {
             .align_x(Horizontal::Center)
             .align_y(Vertical::Center)
             .into()
+    }
+
+        fn subscription(&self) -> Subscription<Self::Message> {
+        struct ConfigSubscription;
+        struct ThemeSubscription;
+
+        let mut subscriptions = vec![
+            event::listen_with(|event, status| match event {
+                Event::Keyboard(KeyEvent::KeyPressed { key, modifiers, .. }) => match status {
+                    event::Status::Ignored => Some(Message::Key(modifiers, key)),
+                    event::Status::Captured => None,
+                },
+                Event::Keyboard(KeyEvent::ModifiersChanged(modifiers)) => {
+                    Some(Message::Modifiers(modifiers))
+                }
+                _ => None,
+            }),
+            cosmic_config::config_subscription(
+                TypeId::of::<ConfigSubscription>(),
+                Self::APP_ID.into(),
+                CONFIG_VERSION,
+            )
+            .map(|update| {
+                if !update.errors.is_empty() {
+                    log::info!(
+                        "errors loading config {:?}: {:?}",
+                        update.keys,
+                        update.errors
+                    );
+                }
+                Message::SystemThemeModeChange(update.config)
+            }),
+            cosmic_config::config_subscription::<_, cosmic_theme::ThemeMode>(
+                TypeId::of::<ThemeSubscription>(),
+                cosmic_theme::THEME_MODE_ID.into(),
+                cosmic_theme::ThemeMode::version(),
+            )
+            .map(|update| {
+                if !update.errors.is_empty() {
+                    log::info!(
+                        "errors loading theme mode {:?}: {:?}",
+                        update.keys,
+                        update.errors
+                    );
+                }
+                Message::SystemThemeModeChange(update.config)
+            }),
+        ];
+
+        // subscriptions.push(self.content.subscription().map(Message::Content));
+
+        Subscription::batch(subscriptions)
     }
 
     /// Handle application events here.
@@ -442,6 +501,16 @@ impl Application for App {
                     log::warn!("failed to open {:?}: {}", url, err);
                 }
             },
+            Message::Key(modifiers, key) => {
+                for (key_bind, action) in self.key_binds.iter() {
+                    if key_bind.matches(modifiers, &key) {
+                        return self.update(action.message());
+                    }
+                }
+            }
+            Message::Modifiers(modifiers) => {
+                self.modifiers = modifiers;
+            }
             Message::AppTheme(index) => {
                 let app_theme = match index {
                     1 => AppTheme::Dark,
