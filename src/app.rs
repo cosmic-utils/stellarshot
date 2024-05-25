@@ -26,6 +26,7 @@ use crate::fl;
 
 pub mod config;
 pub mod menu;
+pub mod settings;
 
 /// This is the struct that represents your application.
 /// It is used to define the data that will be used by your application.
