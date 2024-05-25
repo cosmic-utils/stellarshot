@@ -1,8 +1,8 @@
 // use crate::app::icon_cache::{IconCache, ICON_CACHE};
 use crate::app::Flags;
+use log::info;
 use cosmic::app::Settings;
 use cosmic::iced::{Limits, Size};
-use std::sync::Mutex;
 
 use super::config::CosmicBackupsConfig;
 // use super::localize::set_localization;
@@ -29,6 +29,7 @@ pub fn get_app_settings() -> Settings {
 
 pub fn set_logger() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("warn")).init();
+    info!("Did not load repository information");
 }
 
 // pub fn set_icon_cache() {
