@@ -4,6 +4,9 @@ use crate::app::App;
 use app::{config::CosmicBackupsConfig, Flags};
 use cosmic::app::Settings;
 
+use tracing::info;
+use tracing_subscriber;
+
 /// The `app` module is used by convention to indicate the main component of our application.
 mod app;
 mod backup;
@@ -15,6 +18,10 @@ mod core;
 /// - `()` is the flags that your app needs to use before it starts.
 ///  If your app does not need any flags, you can pass in `()`.
 fn main() -> cosmic::iced::Result {
+    tracing_subscriber::fmt()
+        .json()
+        .init();
+
     let (settings, flags) = settings();
     cosmic::app::run::<App>(settings, flags)
 }
