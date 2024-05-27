@@ -7,7 +7,7 @@ use std::{env, process};
 
 use cosmic::app::{Command, Core};
 use cosmic::iced::alignment::{Horizontal, Vertical};
-use cosmic::iced::{window, event, Event, keyboard::Event as KeyEvent, Subscription};
+use cosmic::iced::{event, keyboard::Event as KeyEvent, window, Event, Subscription};
 use cosmic::iced_core::keyboard::{Key, Modifiers};
 use cosmic::widget::menu::{
     action::MenuAction,
@@ -21,7 +21,7 @@ use cosmic::{
 };
 use cosmic::{widget, Application, Apply, Element};
 
-use crate::app::config::{AppTheme, CONFIG_VERSION, Repository};
+use crate::app::config::{AppTheme, Repository, CONFIG_VERSION};
 use crate::fl;
 
 pub mod config;
@@ -302,7 +302,7 @@ impl Application for App {
         if let Some(repository) = self.nav_model.data::<Repository>(entity) {
             self.selected_repository = Some(repository.clone());
             let window_title = format!("{} - {}", repository.name, fl!("cosmic-backups"));
-            commands.push(self.set_window_title(window_title));
+            commands.push(self.set_window_title(window_title, self.main_window_id()));
         }
 
         Command::batch(commands)
@@ -325,11 +325,11 @@ impl Application for App {
             .into()
     }
 
-        fn subscription(&self) -> Subscription<Self::Message> {
+    fn subscription(&self) -> Subscription<Self::Message> {
         struct ConfigSubscription;
         struct ThemeSubscription;
 
-        let mut subscriptions = vec![
+        let subscriptions = vec![
             event::listen_with(|event, status| match event {
                 Event::Keyboard(KeyEvent::KeyPressed { key, modifiers, .. }) => match status {
                     event::Status::Ignored => Some(Message::Key(modifiers, key)),
@@ -433,10 +433,11 @@ impl Application for App {
                         .unwrap_or_default()
                         .to_string_lossy()
                         .to_string();
+                    let mut repositories = self.config.repositories.clone();
                     let repository = Repository { name, path };
-                    self.config.repositories.push(repository.clone());
+                    repositories.push(repository.clone());
                     self.create_nav_item(repository);
-                    config_set!(repositories, self.config.repositories.clone());
+                    config_set!(repositories, repositories);
                 }
                 Err(e) => {
                     // TODO: Show error to user.
