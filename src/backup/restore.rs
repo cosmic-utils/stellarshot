@@ -2,6 +2,7 @@ use rustic_backend::BackendOptions;
 use rustic_core::{LocalDestination, LsOptions, Repository, RepositoryOptions, RestoreOptions};
 use std::error::Error;
 
+#[allow(dead_code)]
 pub fn restore(
     repository: &str,
     password: &str,

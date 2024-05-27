@@ -5,7 +5,7 @@ use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
 use std::{env, process};
 
-use cosmic::app::{Command, Core};
+use cosmic::app::{message, Command, Core};
 use cosmic::iced::alignment::{Horizontal, Vertical};
 use cosmic::iced::{event, keyboard::Event as KeyEvent, window, Event, Subscription};
 use cosmic::iced_core::keyboard::{Key, Modifiers};
@@ -24,7 +24,10 @@ use cosmic::{widget, Application, Apply, Element};
 use crate::app::config::{AppTheme, Repository, CONFIG_VERSION};
 use crate::fl;
 
+use self::icon_cache::IconCache;
+
 pub mod config;
+pub mod icon_cache;
 pub mod menu;
 pub mod settings;
 
@@ -62,12 +65,19 @@ pub enum Message {
     Modifiers(Modifiers),
     WindowClose,
     WindowNew,
-    CreateRepository(String),
+    Repository(RepositoryAction),
     CreateSnapshot,
     OpenCreateRepositoryDialog,
     OpenCreateSnapshotDialog,
     DeleteRepositoryDialog,
     DeleteSnapshotDialog,
+}
+
+#[derive(Debug, Clone)]
+pub enum RepositoryAction {
+    Init(String),
+    Created(Repository),
+    Error(String),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -183,11 +193,17 @@ impl App {
         .into()
     }
 
-    fn create_nav_item(&mut self, repository: Repository) -> EntityMut<SingleSelect> {
+    fn create_nav_item(
+        &mut self,
+        repository: Repository,
+        icon: &'static str,
+    ) -> EntityMut<SingleSelect> {
         self.nav_model
             .insert()
+            .icon(IconCache::get(icon, 18))
             .text(repository.name.clone())
             .data(repository.clone())
+            .activate()
     }
 }
 
@@ -235,7 +251,7 @@ impl Application for App {
 
         let repositories = app.config.repositories.clone();
         for repository in repositories {
-            app.create_nav_item(repository);
+            app.create_nav_item(repository, "harddisk-symbolic");
         }
 
         (app, Command::none())
@@ -425,24 +441,42 @@ impl Application for App {
             Message::OpenCreateSnapshotDialog => {
                 self.dialog_pages.push_back(DialogPage::CreateSnapshot);
             }
-            Message::CreateRepository(path) => match crate::backup::init(&path, "password") {
-                Ok(_) => {
-                    let path = PathBuf::from(&path);
-                    let name = path
+            Message::Repository(state) => match state {
+                RepositoryAction::Init(path) => {
+                    let init_path = path.clone();
+                    let name = PathBuf::from(&path)
                         .file_name()
                         .unwrap_or_default()
                         .to_string_lossy()
                         .to_string();
+                    let repository = Repository {
+                        name,
+                        path: PathBuf::from(&path),
+                    };
+                    self.create_nav_item(repository.clone(), "timer-sand-symbolic");
+                    return Command::perform(
+                        async move { crate::backup::init(&init_path, "password") },
+                        |result| match result {
+                            Ok(_) => message::app(Message::Repository(RepositoryAction::Created(
+                                repository,
+                            ))),
+                            Err(e) => message::app(Message::Repository(RepositoryAction::Error(
+                                e.to_string(),
+                            ))),
+                        },
+                    );
+                }
+                RepositoryAction::Created(repository) => {
+                    if self.nav_model.active_data::<Repository>().is_some() {
+                        let entity = self.nav_model.active();
+                        self.nav_model
+                            .icon_set(entity, IconCache::get("harddisk-symbolic", 18));
+                    }
                     let mut repositories = self.config.repositories.clone();
-                    let repository = Repository { name, path };
-                    repositories.push(repository.clone());
-                    self.create_nav_item(repository);
+                    repositories.push(repository);
                     config_set!(repositories, repositories);
                 }
-                Err(e) => {
-                    // TODO: Show error to user.
-                    eprintln!("failed to create repository: {}", e)
-                }
+                RepositoryAction::Error(error) => log::error!("{}", error),
             },
             Message::DeleteRepositoryDialog => {
                 println!("Deleting repository");
@@ -470,8 +504,8 @@ impl Application for App {
             Message::DialogComplete => {
                 if let Some(dialog_page) = self.dialog_pages.pop_front() {
                     match dialog_page {
-                        DialogPage::CreateRepository(name) => {
-                            return self.update(Message::CreateRepository(name));
+                        DialogPage::CreateRepository(path) => {
+                            return self.update(Message::Repository(RepositoryAction::Init(path)));
                         }
                         DialogPage::CreateSnapshot => {
                             return self.update(Message::CreateSnapshot);
