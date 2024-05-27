@@ -1,6 +1,6 @@
 [Desktop Entry]
-Name=COSMIC App Template
-Exec=cosmic-app-template %F
+Name=COSMIC Backups
+Exec=cosmic-backups %F
 Terminal=false
 Type=Application
 StartupNotify=true

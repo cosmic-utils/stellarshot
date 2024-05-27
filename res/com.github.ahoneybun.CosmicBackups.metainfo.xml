@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>com.example.CosmicAppTemplate</id>
+  <id>com.github.ahoneybun.CosmicBackups</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-only</project_license>
   <project_group>COSMIC</project_group>
-  <developer_name>YourName</developer_name>
-  <update_contact>your@email.com</update_contact>
+  <developer_name>Aaron Honeycutt</developer_name>
+  <update_contact>aaronhoneycutt@proton.me</update_contact>
   <url type="homepage"></url>
   <url type="bugtracker"></url>
-  <name>COSMIC App Template</name>
-  <summary>A template for COSMIC applications</summary>
+  <name>COSMIC Backups</name>
+  <summary>A simple backup application for the COSMIC desktop.</summary>
   <description>
-    <p>A template for COSMIC applications</p>
+    <p>A simple backup application using Rustic for the COSMIC desktop.</p>
   </description>
   <launchable type="desktop-id">com.example.CosmicAppTemplate.desktop</launchable>
   <icon type="remote" height="256" width="256">https://raw.githubusercontent.com/edfloreshz/cosmic-app-template/master/res/icons/hicolor/256x256/apps/com.example.CosmicAppTemplate.svg</icon>
@@ -22,7 +22,7 @@
       <mimetype>text/plain</mimetype>
     </mimetypes>
     <binaries>
-      <binary>cosmic-app-template</binary>
+      <binary>cosmic-backups</binary>
     </binaries>
   </provides>
 </component>
