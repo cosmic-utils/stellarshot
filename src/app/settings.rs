@@ -1,10 +1,14 @@
+use std::sync::Mutex;
+
 use super::config::CosmicBackupsConfig;
+use super::icon_cache::{IconCache, ICON_CACHE};
 use crate::app::Flags;
 use cosmic::app::Settings;
 use cosmic::iced::{Limits, Size};
 
 pub fn init() -> (Settings, Flags) {
     set_logger();
+    set_icon_cache();
     let settings = get_app_settings();
     let flags = get_flags();
     (settings, flags)
@@ -23,6 +27,10 @@ pub fn get_app_settings() -> Settings {
 
 pub fn set_logger() {
     tracing_subscriber::fmt().json().init();
+}
+
+pub fn set_icon_cache() {
+    ICON_CACHE.get_or_init(|| Mutex::new(IconCache::new()));
 }
 
 pub fn get_flags() -> Flags {
