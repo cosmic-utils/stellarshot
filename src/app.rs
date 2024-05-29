@@ -22,11 +22,13 @@ use cosmic::{
 use cosmic::{widget, Application, Apply, Element};
 
 use crate::app::config::{AppTheme, Repository, CONFIG_VERSION};
+use crate::app::key_bind::key_binds;
 use crate::fl;
 
 use self::icon_cache::IconCache;
 
 pub mod config;
+mod key_bind;
 pub mod icon_cache;
 pub mod menu;
 pub mod settings;
@@ -563,27 +565,4 @@ impl Application for App {
 
         Command::none()
     }
-}
-
-pub fn key_binds() -> HashMap<KeyBind, Action> {
-    let mut key_binds = HashMap::new();
-
-    macro_rules! bind {
-        ([$($modifier:ident),* $(,)?], $key:expr, $action:ident) => {{
-            key_binds.insert(
-                KeyBind {
-                    modifiers: vec![$(Modifier::$modifier),*],
-                    key: $key,
-                },
-                Action::$action,
-            );
-        }};
-    }
-
-    bind!([Ctrl], Key::Character("r".into()), CreateRepository);
-    bind!([Ctrl, Shift], Key::Character("r".into()), CreateSnapshot);
-    bind!([Ctrl], Key::Character("w".into()), WindowClose);
-    bind!([Ctrl, Shift], Key::Character("n".into()), WindowNew);
-
-    key_binds
 }
