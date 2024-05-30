@@ -21,6 +21,11 @@ use cosmic::{
 };
 use cosmic::{widget, Application, Apply, Element};
 
+use cosmic_files::{
+    dialog::{Dialog, DialogKind, DialogMessage, DialogResult},
+    mime_icon::{mime_for_path, mime_icon},
+};
+
 use crate::app::config::{AppTheme, Repository, CONFIG_VERSION};
 use crate::app::key_bind::key_binds;
 use crate::fl;
@@ -28,16 +33,12 @@ use crate::fl;
 use self::icon_cache::IconCache;
 
 pub mod config;
-mod key_bind;
 pub mod icon_cache;
+mod key_bind;
 pub mod menu;
 pub mod settings;
 
-/// This is the struct that represents your application.
-/// It is used to define the data that will be used by your application.
 pub struct App {
-    /// This is the core of your application, it is used to communicate with the Cosmic runtime.
-    /// It is used to send messages to your application, and to access the resources of the Cosmic runtime.
     core: Core,
     nav_model: segmented_button::SingleSelectModel,
     selected_repository: Option<Repository>,
@@ -45,20 +46,19 @@ pub struct App {
     config_handler: Option<cosmic_config::Config>,
     config: config::CosmicBackupsConfig,
     context_page: ContextPage,
-    dialog_pages: VecDeque<DialogPage>,
+    dialog_opt: None,
+    dialog_page_opt: Option<DialogPage>,
     dialog_text_input: widget::Id,
     key_binds: HashMap<KeyBind, Action>,
     modifiers: Modifiers,
 }
 
-/// This is the enum that contains all the possible variants that your application will need to transmit messages.
-/// This is used to communicate between the different parts of your application.
-/// If your application does not need to send messages, you can use an empty enum or `()`.
 #[derive(Debug, Clone)]
 pub enum Message {
     DialogCancel,
     DialogComplete,
     DialogUpdate(DialogPage),
+    DialogMessage(DialogMessage),
     ToggleContextPage(ContextPage),
     LaunchUrl(String),
     AppTheme(usize),
@@ -245,7 +245,8 @@ impl Application for App {
             context_page: ContextPage::Settings,
             config_handler: flags.config_handler,
             config: flags.config,
-            dialog_pages: VecDeque::new(),
+            dialog_opt: None,
+            dialog_page_opt: None,
             dialog_text_input: widget::Id::unique(),
             key_binds: key_binds(),
             modifiers: Modifiers::empty(),
@@ -271,7 +272,7 @@ impl Application for App {
     }
 
     fn dialog(&self) -> Option<Element<Message>> {
-        let dialog_page = match self.dialog_pages.front() {
+        let dialog_page = match self.dialog_page_opt.front() {
             Some(some) => some,
             None => return None,
         };
@@ -435,11 +436,34 @@ impl Application for App {
                 }
                 self.set_context_title(context_page.title());
             }
-            Message::OpenCreateRepositoryDialog => {
-                self.dialog_pages
-                    .push_back(DialogPage::CreateRepository(String::new()));
-                return widget::text_input::focus(self.dialog_text_input.clone());
+            // Message::OpenCreateRepositoryDialog => {
+            //     self.dialog_pages
+            //         .push_back(DialogPage::CreateRepository(String::new()));
+            //     return widget::text_input::focus(self.dialog_text_input.clone());
             }
+            Message::OpenCreateRepositoryDialog => {
+                if self.dialog_opt.is_none() {
+                    let (dialog, command) = Dialog::new(
+                        DialogKind::OpenMultipleFiles,
+                        None,
+                        Message::DialogMessage,
+                        Message::OpenFileResult,
+                    );
+                    self.dialog_opt = Some(dialog);
+                    return command;
+                }
+            }
+            Message::OpenFileResult(result) => {
+                self.dialog_opt = None;
+                match result {
+                    DialogResult::Cancel => {}
+                    DialogResult::Open(paths) => {
+                        for path in paths {
+                            self.open_tab(Some(path));
+                        }
+                        return self.update_tab();
+                    }
+                }
             Message::OpenCreateSnapshotDialog => {
                 self.dialog_pages.push_back(DialogPage::CreateSnapshot);
             }
@@ -513,6 +537,11 @@ impl Application for App {
                             return self.update(Message::CreateSnapshot);
                         }
                     }
+                }
+            }
+            Message::DialogMessage(dialog_message) => {
+                if let Some(dialog) = &mut self.dialog_opt {
+                    return dialog.update(dialog_message);
                 }
             }
             Message::DialogUpdate(dialog_page) => {
