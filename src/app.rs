@@ -46,8 +46,8 @@ pub struct App {
     config_handler: Option<cosmic_config::Config>,
     config: config::CosmicBackupsConfig,
     context_page: ContextPage,
-    dialog_opt: None,
-    dialog_page_opt: Option<DialogPage>,
+    dialog_pages: VecDeque<DialogPage>,
+    dialog_opt: Option<Dialog<Message>>,
     dialog_text_input: widget::Id,
     key_binds: HashMap<KeyBind, Action>,
     modifiers: Modifiers,
@@ -73,6 +73,7 @@ pub enum Message {
     OpenCreateSnapshotDialog,
     DeleteRepositoryDialog,
     DeleteSnapshotDialog,
+    OpenFileResult(DialogResult),
 }
 
 #[derive(Debug, Clone)]
@@ -245,8 +246,8 @@ impl Application for App {
             context_page: ContextPage::Settings,
             config_handler: flags.config_handler,
             config: flags.config,
+            dialog_pages: VecDeque::new(),
             dialog_opt: None,
-            dialog_page_opt: None,
             dialog_text_input: widget::Id::unique(),
             key_binds: key_binds(),
             modifiers: Modifiers::empty(),
@@ -272,7 +273,7 @@ impl Application for App {
     }
 
     fn dialog(&self) -> Option<Element<Message>> {
-        let dialog_page = match self.dialog_page_opt.front() {
+        let dialog_page = match self.dialog_pages.front() {
             Some(some) => some,
             None => return None,
         };
@@ -348,7 +349,7 @@ impl Application for App {
         struct ConfigSubscription;
         struct ThemeSubscription;
 
-        let subscriptions = vec![
+        let mut subscriptions = vec![
             event::listen_with(|event, status| match event {
                 Event::Keyboard(KeyEvent::KeyPressed { key, modifiers, .. }) => match status {
                     event::Status::Ignored => Some(Message::Key(modifiers, key)),
@@ -393,6 +394,11 @@ impl Application for App {
 
         // subscriptions.push(self.content.subscription().map(Message::Content));
 
+        match &self.dialog_opt {
+            Some(dialog) => subscriptions.push(dialog.subscription()),
+            None => {}
+        }
+
         Subscription::batch(subscriptions)
     }
 
@@ -436,11 +442,6 @@ impl Application for App {
                 }
                 self.set_context_title(context_page.title());
             }
-            // Message::OpenCreateRepositoryDialog => {
-            //     self.dialog_pages
-            //         .push_back(DialogPage::CreateRepository(String::new()));
-            //     return widget::text_input::focus(self.dialog_text_input.clone());
-            }
             Message::OpenCreateRepositoryDialog => {
                 if self.dialog_opt.is_none() {
                     let (dialog, command) = Dialog::new(
@@ -459,11 +460,11 @@ impl Application for App {
                     DialogResult::Cancel => {}
                     DialogResult::Open(paths) => {
                         for path in paths {
-                            self.open_tab(Some(path));
+                            println!("path: {:?}", path);
                         }
-                        return self.update_tab();
                     }
                 }
+            }
             Message::OpenCreateSnapshotDialog => {
                 self.dialog_pages.push_back(DialogPage::CreateSnapshot);
             }
