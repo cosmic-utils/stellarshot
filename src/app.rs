@@ -5,14 +5,11 @@ use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
 use std::{env, process};
 
-use cosmic::app::{message, Command, Core};
+use cosmic::app::{command::Command, message, Core};
 use cosmic::iced::alignment::{Horizontal, Vertical};
 use cosmic::iced::{event, keyboard::Event as KeyEvent, window, Event, Subscription};
 use cosmic::iced_core::keyboard::{Key, Modifiers};
-use cosmic::widget::menu::{
-    action::MenuAction,
-    key_bind::{KeyBind, Modifier},
-};
+use cosmic::widget::menu::{action::MenuAction, key_bind::KeyBind};
 use cosmic::widget::segmented_button::{self, EntityMut, SingleSelect};
 use cosmic::{
     cosmic_config, cosmic_theme,
@@ -21,10 +18,7 @@ use cosmic::{
 };
 use cosmic::{widget, Application, Apply, Element};
 
-use cosmic_files::{
-    dialog::{Dialog, DialogKind, DialogMessage, DialogResult},
-    mime_icon::{mime_for_path, mime_icon},
-};
+use cosmic_files::dialog::{Dialog, DialogKind, DialogMessage, DialogResult};
 
 use crate::app::config::{AppTheme, Repository, CONFIG_VERSION};
 use crate::app::key_bind::key_binds;
@@ -326,6 +320,13 @@ impl Application for App {
         }
 
         Command::batch(commands)
+    }
+
+    fn view_window(&self, window_id: window::Id) -> Element<Message> {
+        match &self.dialog_opt {
+            Some(dialog) => dialog.view(window_id),
+            None => widget::text("No dialog").into(),
+        }
     }
 
     fn view(&self) -> Element<Self::Message> {
