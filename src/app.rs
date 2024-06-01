@@ -446,7 +446,7 @@ impl Application for App {
             Message::OpenCreateRepositoryDialog => {
                 if self.dialog_opt.is_none() {
                     let (dialog, command) = Dialog::new(
-                        DialogKind::OpenMultipleFiles,
+                        DialogKind::OpenMultipleFolders,
                         None,
                         Message::DialogMessage,
                         Message::OpenFileResult,
