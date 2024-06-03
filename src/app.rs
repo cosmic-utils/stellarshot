@@ -43,7 +43,7 @@ pub struct App {
     selected_repository: Option<Repository>,
     app_themes: Vec<String>,
     config_handler: Option<cosmic_config::Config>,
-    config: config::CosmicBackupsConfig,
+    config: config::StellarshotConfig,
     context_page: ContextPage,
     dialog_pages: VecDeque<DialogPage>,
     dialog_text_input: widget::Id,
@@ -106,7 +106,7 @@ pub enum DialogPage {
 #[derive(Clone, Debug)]
 pub struct Flags {
     pub config_handler: Option<cosmic_config::Config>,
-    pub config: config::CosmicBackupsConfig,
+    pub config: config::Stellarshot,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -144,7 +144,7 @@ impl App {
 
     fn about(&self) -> Element<Message> {
         let cosmic_theme::Spacing { space_xxs, .. } = cosmic::theme::active().cosmic().spacing;
-        let repository = "https://github.com/ahoneybun/cosmic-backups";
+        let repository = "https://github.com/ahoneybun/Stellarshot";
         let hash = env!("VERGEN_GIT_SHA");
         let short_hash: String = hash.chars().take(7).collect();
         let date = env!("VERGEN_GIT_COMMIT_DATE");
@@ -155,7 +155,7 @@ impl App {
                 )[..],
             ))
             .into(),
-            widget::text::title3(fl!("cosmic-backups")).into(),
+            widget::text::title3(fl!("stellarshot")).into(),
             widget::button::link(repository)
                 .on_press(Message::LaunchUrl(repository.to_string()))
                 .padding(0)
@@ -216,7 +216,7 @@ impl Application for App {
 
     type Message = Message;
 
-    const APP_ID: &'static str = "com.github.ahoneybun.CosmicExtBackups";
+    const APP_ID: &'static str = "com.github.ahoneybun.Stellarshot";
 
     fn core(&self) -> &Core {
         &self.core
@@ -319,7 +319,7 @@ impl Application for App {
 
         if let Some(repository) = self.nav_model.data::<Repository>(entity) {
             self.selected_repository = Some(repository.clone());
-            let window_title = format!("{} - {}", repository.name, fl!("cosmic-backups"));
+            let window_title = format!("{} - {}", repository.name, fl!("stellarshot"));
             commands.push(self.set_window_title(window_title, self.main_window_id()));
         }
 

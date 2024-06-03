@@ -10,25 +10,25 @@ use serde::{Deserialize, Serialize};
 pub const CONFIG_VERSION: u64 = 1;
 
 #[derive(Clone, Default, Debug, Eq, PartialEq, Deserialize, Serialize, CosmicConfigEntry)]
-pub struct CosmicBackupsConfig {
+pub struct StellarshotConfig {
     pub app_theme: AppTheme,
     pub repositories: Vec<Repository>,
 }
 
-impl CosmicBackupsConfig {
+impl StellarshotConfig {
     pub fn config_handler() -> Option<Config> {
         Config::new(App::APP_ID, CONFIG_VERSION).ok()
     }
 
-    pub fn config() -> CosmicBackupsConfig {
+    pub fn config() -> StellarshotConfig {
         match Self::config_handler() {
             Some(config_handler) => {
-                CosmicBackupsConfig::get_entry(&config_handler).unwrap_or_else(|(errs, config)| {
+                StellarshotConfig::get_entry(&config_handler).unwrap_or_else(|(errs, config)| {
                     log::info!("errors loading config: {:?}", errs);
                     config
                 })
             }
-            None => CosmicBackupsConfig::default(),
+            None => StellarshotConfig::default(),
         }
     }
 }
