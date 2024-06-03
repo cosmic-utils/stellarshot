@@ -106,7 +106,7 @@ pub enum DialogPage {
 #[derive(Clone, Debug)]
 pub struct Flags {
     pub config_handler: Option<cosmic_config::Config>,
-    pub config: config::Stellarshot,
+    pub config: config::StellarshotConfig,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
