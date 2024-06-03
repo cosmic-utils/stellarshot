@@ -216,7 +216,7 @@ impl Application for App {
 
     type Message = Message;
 
-    const APP_ID: &'static str = "com.github.ahoneybun.CosmicBackups";
+    const APP_ID: &'static str = "com.github.ahoneybun.CosmicExtBackups";
 
     fn core(&self) -> &Core {
         &self.core
