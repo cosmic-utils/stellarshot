@@ -1,9 +1,9 @@
 <div align="center">
   <br>
   <img src="https://raw.githubusercontent.com/ahoneybun/cosmic-backups/main/res/icons/hicolor/256x256/apps/com.example.CosmicAppTemplate.svg" width="150" />
-  <h1>COSMIC Backups</h1>
+  <h1>Stellarshot</h1>
 
-  <h3>A simple backup application using Rustic for the COSMIC desktop.</h3>
+  <h3>A simple backup application using Rustic for the COSMIC™ desktop.</h3>
 
   ![COSMIC Backups Light](https://raw.githubusercontent.com/ahoneybun/cosmic-backups/main/res/screenshots/COSMIC-Backups-Light.png#gh-light-mode-only)
 
@@ -16,7 +16,7 @@
 
 DO NOT TRUST this will important data at this time until it's first release. Always have multiple backups and follow the [3-2-1 rule](https://www.seagate.com/blog/what-is-a-3-2-1-backup-strategy/).
 
-## This is not an official COSMIC application from System76
+## This is not an official COSMIC™ application from System76
 
 ## Current features
 
@@ -25,7 +25,7 @@ DO NOT TRUST this will important data at this time until it's first release. Alw
 
 ## Install
 
-To install your COSMIC application, you will need [just](https://github.com/casey/just), if you're on Pop!\_OS, you can install it with the following command:
+To install your COSMIC™ application, you will need [just](https://github.com/casey/just), if you're on Pop!\_OS, you can install it with the following command:
 
 ```sh
 sudo apt install just
