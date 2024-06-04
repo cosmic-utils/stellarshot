@@ -23,6 +23,11 @@ DO NOT TRUST this will important data at this time until it's first release. Alw
 - [x] Creating a repository with a hardcoded password
 - [x] Creating a new snapshot (blank for now) into a selected repository
 
+## Planned features
+
+- [ ] Creating a repository with a user set password
+- [ ] Create and delete snapshots into any selected repository
+
 ## Install
 
 To install your COSMIC™ application, you will need [just](https://github.com/casey/just), if you're on Pop!\_OS, you can install it with the following command:
