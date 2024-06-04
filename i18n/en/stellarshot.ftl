@@ -1,5 +1,5 @@
-cosmic-backups = COSMIC Backups
-app-title = COSMIC Backups
+stellarshot = Stellarshot
+app-title = stellarshot
 welcome = Backup often! ✨
 
 # Dialogs
