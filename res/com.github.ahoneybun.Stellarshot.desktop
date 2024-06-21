@@ -1,6 +1,6 @@
 [Desktop Entry]
-Name=COSMIC Backups
-Exec=cosmic-backups %F
+Name=Stellarshot
+Exec=stellarshot %F
 Terminal=false
 Type=Application
 StartupNotify=true

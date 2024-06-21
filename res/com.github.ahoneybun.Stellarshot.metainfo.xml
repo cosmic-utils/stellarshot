@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>com.github.ahoneybun.CosmicBackups</id>
+  <id>com.github.ahoneybun.Stellarshot</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-only</project_license>
   <project_group>COSMIC</project_group>
@@ -8,10 +8,10 @@
   <update_contact>aaronhoneycutt@proton.me</update_contact>
   <url type="homepage"></url>
   <url type="bugtracker"></url>
-  <name>COSMIC Backups</name>
-  <summary>A simple backup application for the COSMIC desktop.</summary>
+  <name>Stellarshot</name>
+  <summary>A simple backup application for the COSMIC™ desktop.</summary>
   <description>
-    <p>A simple backup application using Rustic for the COSMIC desktop.</p>
+    <p> A simple backup application using Rustic for the COSMIC™ desktop.</p>
   </description>
   <launchable type="desktop-id">com.example.CosmicAppTemplate.desktop</launchable>
   <icon type="remote" height="256" width="256">https://raw.githubusercontent.com/edfloreshz/cosmic-app-template/master/res/icons/hicolor/256x256/apps/com.example.CosmicAppTemplate.svg</icon>
@@ -22,7 +22,7 @@
       <mimetype>text/plain</mimetype>
     </mimetypes>
     <binaries>
-      <binary>cosmic-backups</binary>
+      <binary>stellarshot</binary>
     </binaries>
   </provides>
 </component>
