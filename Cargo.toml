@@ -20,6 +20,7 @@ paste = "1.0"
 rustic_core = "0.2.0"
 rustic_backend = "0.1.1"
 tracing-subscriber = { version = "0.3.18", features = ["json"] }
+slotmap = "1.0.7"
 
 [dependencies.libcosmic]
 git = "https://github.com/pop-os/libcosmic.git"

@@ -37,7 +37,7 @@ pub fn snapshot(repository: &str, password: &str, paths: Vec<&str>) -> Result<()
     Ok(())
 }
 
-pub fn snapshots(repository: &str, password: &str) -> Result<Vec<SnapshotFile>, Box<dyn Error>> {
+pub fn fetch(repository: &str, password: &str) -> Result<Vec<SnapshotFile>, Box<dyn Error>> {
     let backends = BackendOptions::default()
         .repository(repository)
         .to_backends()?;

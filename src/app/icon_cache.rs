@@ -36,6 +36,12 @@ impl IconCache {
 
         bundle!("timer-sand-symbolic", 18);
         bundle!("harddisk-symbolic", 18);
+        bundle!("info-outline-symbolic", 18);
+        bundle!("user-trash-full-symbolic", 18);
+
+        bundle!("harddisk-symbolic", 56);
+        bundle!("hourglass-symbolic", 56);
+        bundle!("box-outline-symbolic", 56);
 
         Self { cache }
     }

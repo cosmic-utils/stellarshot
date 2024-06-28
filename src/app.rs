@@ -9,10 +9,7 @@ use cosmic::app::{message, Command, Core};
 use cosmic::iced::alignment::{Horizontal, Vertical};
 use cosmic::iced::{event, keyboard::Event as KeyEvent, window, Event, Subscription};
 use cosmic::iced_core::keyboard::{Key, Modifiers};
-use cosmic::widget::menu::{
-    action::MenuAction,
-    key_bind::{KeyBind, Modifier},
-};
+use cosmic::widget::menu::{action::MenuAction, key_bind::KeyBind};
 use cosmic::widget::segmented_button::{self, EntityMut, SingleSelect};
 use cosmic::{
     cosmic_config, cosmic_theme,
@@ -20,6 +17,7 @@ use cosmic::{
     ApplicationExt,
 };
 use cosmic::{widget, Application, Apply, Element};
+use views::content::{self, Content};
 
 use crate::app::config::{AppTheme, Repository, CONFIG_VERSION};
 use crate::app::key_bind::key_binds;
@@ -32,6 +30,7 @@ pub mod icon_cache;
 mod key_bind;
 pub mod menu;
 pub mod settings;
+pub mod views;
 
 /// This is the struct that represents your application.
 /// It is used to define the data that will be used by your application.
@@ -40,7 +39,7 @@ pub struct App {
     /// It is used to send messages to your application, and to access the resources of the Cosmic runtime.
     core: Core,
     nav_model: segmented_button::SingleSelectModel,
-    selected_repository: Option<Repository>,
+    content: Content,
     app_themes: Vec<String>,
     config_handler: Option<cosmic_config::Config>,
     config: config::StellarshotConfig,
@@ -56,6 +55,7 @@ pub struct App {
 /// If your application does not need to send messages, you can use an empty enum or `()`.
 #[derive(Debug, Clone)]
 pub enum Message {
+    Content(content::Message),
     DialogCancel,
     DialogComplete,
     DialogUpdate(DialogPage),
@@ -240,7 +240,7 @@ impl Application for App {
         let mut app = App {
             core,
             nav_model,
-            selected_repository: None,
+            content: Content::new(),
             app_themes: vec![fl!("match-desktop"), fl!("dark"), fl!("light")],
             context_page: ContextPage::Settings,
             config_handler: flags.config_handler,
@@ -318,8 +318,13 @@ impl Application for App {
         self.nav_model.activate(entity);
 
         if let Some(repository) = self.nav_model.data::<Repository>(entity) {
-            self.selected_repository = Some(repository.clone());
-            let window_title = format!("{} - {}", repository.name, fl!("stellarshot"));
+            let name = repository.name.clone();
+            commands.push(
+                self.update(Message::Content(content::Message::SetRepository(
+                    repository.clone(),
+                ))),
+            );
+            let window_title = format!("{} - {}", name, fl!("stellarshot"));
             commands.push(self.set_window_title(window_title, self.main_window_id()));
         }
 
@@ -327,16 +332,7 @@ impl Application for App {
     }
 
     fn view(&self) -> Element<Self::Message> {
-        let content: Element<Self::Message> = match self.selected_repository {
-            Some(ref repository) => widget::text::title1(format!(
-                "{}: {}",
-                fl!("selected-repo"),
-                repository.name.clone()
-            ))
-            .into(),
-            None => widget::text::title1(fl!("welcome")).into(),
-        };
-        widget::container(content)
+        widget::container(self.content.view().map(Message::Content))
             .apply(widget::container)
             .width(Length::Fill)
             .height(Length::Fill)
@@ -427,6 +423,23 @@ impl Application for App {
         }
 
         match message {
+            Message::Content(message) => {
+                let commands = self.content.update(message);
+                for command in commands {
+                    match command {
+                        content::Command::FetchSnapshots(repository, password) => {
+                            return Command::perform(
+                                async move { Content::snapshots(&repository, &password) },
+                                |result| {
+                                    cosmic::app::Message::App(Message::Content(
+                                        content::Message::SetSnapshots(result),
+                                    ))
+                                },
+                            )
+                        }
+                    }
+                }
+            }
             Message::ToggleContextPage(context_page) => {
                 //TODO: ensure context menus are closed
                 if self.context_page == context_page {
@@ -489,7 +502,7 @@ impl Application for App {
                 println!("Deleting snapshot");
             }
             Message::CreateSnapshot => {
-                if let Some(repository) = &self.selected_repository {
+                if let Some(repository) = &self.content.repository {
                     let Some(path) = repository.path.to_str() else {
                         return Command::none();
                     };

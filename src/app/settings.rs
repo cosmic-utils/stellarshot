@@ -26,7 +26,7 @@ pub fn get_app_settings() -> Settings {
 }
 
 pub fn set_logger() {
-    tracing_subscriber::fmt().json().init();
+    tracing_subscriber::fmt().init();
 }
 
 pub fn set_icon_cache() {

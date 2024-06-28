@@ -2,6 +2,14 @@ stellarshot = Stellarshot
 app-title = stellarshot
 welcome = Backup often! ✨
 
+# Content
+no-repository-selected = No repository selected.
+no-repository-suggestion = To create a repository use the menu.
+no-snapshots = No snapshots found.
+no-snapshots-suggestion = To create a snapshot use the menu.
+loading = Loading...
+loading-snapshots = Loading snapshots.
+
 # Dialogs
 save = Save
 create = Create
