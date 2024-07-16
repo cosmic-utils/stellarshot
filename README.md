@@ -14,7 +14,7 @@
 
 # UNDER ACTIVE DEVELOPMENT
 
-DO NOT TRUST this will important data at this time until it's first release. Always have multiple backups and follow the [3-2-1 rule](https://www.seagate.com/blog/what-is-a-3-2-1-backup-strategy/).
+DO NOT TRUST this with important data at this time until it's first release. Always have multiple backups and follow the [3-2-1 rule](https://www.seagate.com/blog/what-is-a-3-2-1-backup-strategy/).
 
 ## This is not an official COSMIC™ application from System76
 
