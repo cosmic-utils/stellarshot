@@ -28,8 +28,8 @@ use crate::fl;
 use self::icon_cache::IconCache;
 
 pub mod config;
-mod key_bind;
 pub mod icon_cache;
+mod key_bind;
 pub mod menu;
 pub mod settings;
 
@@ -151,7 +151,7 @@ impl App {
         widget::column::with_children(vec![
             widget::svg(widget::svg::Handle::from_memory(
                 &include_bytes!(
-                    "../res/icons/hicolor/128x128/apps/com.example.CosmicAppTemplate.svg"
+                    "../res/icons/hicolor/scalable/apps/com.github.ahoneybun.Stellarshot.svg"
                 )[..],
             ))
             .into(),
