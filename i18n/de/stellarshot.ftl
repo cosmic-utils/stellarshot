@@ -1,13 +1,13 @@
 stellarshot = Stellarshot
 app-title = stellarshot
-welcome = Erstelle oft Momentaufnahmen! ✨
+welcome = Erstelle häufig Momentaufnahmen! ✨
 
 # Dialogs
 save = Speichern
 create = Erstellen
 cancel = Abbrechen
 confirm = Bestätigen
-create-repo = Erstelle ein neues Archiv
+create-repo = Neues Archiv erstellen
 delete-repo = Archiv löschen
 selected-repo = Ausgewähltes Archiv
 repo-location = Speicherort des Archivs
@@ -43,9 +43,9 @@ quit = Verlassen
 
 ## Edit
 edit = Bearbeiten
-cut = Kürzen
+cut = Schneiden
 
 ## View
-view = View
+view = Ansicht
 menu-settings = Einstellungen
 menu-about = Informationen über Stellarshot
