@@ -11,7 +11,7 @@ create-repo = Neues Archiv erstellen
 delete-repo = Archiv löschen
 selected-repo = Ausgewähltes Archiv
 repo-location = Speicherort des Archivs
-create-snapshot = Erstelle eine neue Momentaufnahme
+create-snapshot = Neue Momentaufnahme erstellen
 delete-snapshot = Momentaufnahme löschen
 snapshot-description = Eine Momentaufnahme ist eine Kopie deines Archivs zu einem bestimmten Zeitpunkt
 
