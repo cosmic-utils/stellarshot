@@ -1,6 +1,6 @@
 stellarshot = Stellarshot
 app-title = stellarshot
-welcome = Erstelle oft Backups! ✨
+welcome = Erstelle oft Momentaufnahmen! ✨
 
 # Dialogs
 save = Speichern
