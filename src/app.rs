@@ -327,11 +327,13 @@ impl Application for App {
     }
 
     fn view(&self) -> Element<Self::Message> {
-        let content: Element<Self::Message> = match &self.selected_repository {
-            Some(repository) => {
-                widget::text::title1(format!("Selected repository: {}", repository.name.clone()))
-                    .into()
-            }
+        let content: Element<Self::Message> = match self.selected_repository {
+            Some(ref repository) => widget::text::title1(format!(
+                "{}: {}",
+                fl!("selected-repo"),
+                repository.name.clone()
+            ))
+            .into(),
             None => widget::text::title1(fl!("welcome")).into(),
         };
         widget::container(content)
