@@ -13,7 +13,6 @@ selected-repo = Ausgewähltes Archiv
 repo-location = Speicherort des Archivs
 create-snapshot = Erstelle eine neue Momentaufnahme
 delete-snapshot = Momentaufnahme löschen
-# snapshot-description = A snapshot is a point-in-time copy of your repository.
 snapshot-description = Eine Momentaufnahme ist eine Kopie deines Archivs zu einem bestimmten Zeitpunkt
 
 # Context Pages
