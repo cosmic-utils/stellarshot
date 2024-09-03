@@ -28,8 +28,8 @@ use crate::fl;
 use self::icon_cache::IconCache;
 
 pub mod config;
-mod key_bind;
 pub mod icon_cache;
+mod key_bind;
 pub mod menu;
 pub mod settings;
 
@@ -151,7 +151,7 @@ impl App {
         widget::column::with_children(vec![
             widget::svg(widget::svg::Handle::from_memory(
                 &include_bytes!(
-                    "../res/icons/hicolor/128x128/apps/com.example.CosmicAppTemplate.svg"
+                    "../res/icons/hicolor/scalable/apps/com.github.ahoneybun.Stellarshot.svg"
                 )[..],
             ))
             .into(),
@@ -327,11 +327,13 @@ impl Application for App {
     }
 
     fn view(&self) -> Element<Self::Message> {
-        let content: Element<Self::Message> = match &self.selected_repository {
-            Some(repository) => {
-                widget::text::title1(format!("Selected repository: {}", repository.name.clone()))
-                    .into()
-            }
+        let content: Element<Self::Message> = match self.selected_repository {
+            Some(ref repository) => widget::text::title1(format!(
+                "{}: {}",
+                fl!("selected-repo"),
+                repository.name.clone()
+            ))
+            .into(),
             None => widget::text::title1(fl!("welcome")).into(),
         };
         widget::container(content)
