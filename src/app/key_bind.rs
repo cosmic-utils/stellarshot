@@ -22,6 +22,7 @@ pub fn key_binds() -> HashMap<KeyBind, Action> {
     }
     bind!([Ctrl], Key::Character("r".into()), CreateRepository);
     bind!([Ctrl, Shift], Key::Character("r".into()), CreateSnapshot);
+    bind!([], Key::Named(Named::Delete), DeleteRepository);
     bind!([Ctrl], Key::Character("w".into()), WindowClose);
     bind!([Ctrl, Shift], Key::Character("n".into()), WindowNew);
     bind!([Ctrl], Key::Character(",".into()), Settings);

@@ -1,10 +1,12 @@
 use std::sync::Mutex;
 
-use super::config::CosmicBackupsConfig;
+use super::config::StellarshotConfig;
 use super::icon_cache::{IconCache, ICON_CACHE};
 use crate::app::Flags;
 use cosmic::app::Settings;
 use cosmic::iced::{Limits, Size};
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 pub fn init() -> (Settings, Flags) {
     set_logger();
@@ -15,7 +17,7 @@ pub fn init() -> (Settings, Flags) {
 }
 
 pub fn get_app_settings() -> Settings {
-    let config = CosmicBackupsConfig::config();
+    let config = StellarshotConfig::config();
 
     let mut settings = Settings::default();
     settings = settings.theme(config.app_theme.theme());
@@ -26,7 +28,11 @@ pub fn get_app_settings() -> Settings {
 }
 
 pub fn set_logger() {
-    tracing_subscriber::fmt().json().init();
+    std::env::set_var("RUST_LOG", "stellarshot=info");
+    tracing_subscriber::registry()
+        .with(fmt::layer())
+        .with(EnvFilter::from_default_env())
+        .init();
 }
 
 pub fn set_icon_cache() {
@@ -35,8 +41,8 @@ pub fn set_icon_cache() {
 
 pub fn get_flags() -> Flags {
     let (config_handler, config) = (
-        CosmicBackupsConfig::config_handler(),
-        CosmicBackupsConfig::config(),
+        StellarshotConfig::config_handler(),
+        StellarshotConfig::config(),
     );
 
     let flags = Flags {

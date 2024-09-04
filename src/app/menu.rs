@@ -31,10 +31,7 @@ pub fn menu_bar<'a>(key_binds: &HashMap<KeyBind, Action>) -> Element<'a, Message
             root(fl!("edit")),
             items(
                 key_binds,
-                vec![
-                    Item::Button(fl!("delete-repo"), Action::DeleteRepository),
-                    Item::Button(fl!("delete-snapshot"), Action::DeleteSnapshot),
-                ],
+                vec![Item::Button(fl!("delete-repo"), Action::DeleteRepository)],
             ),
         ),
         Tree::with_children(
