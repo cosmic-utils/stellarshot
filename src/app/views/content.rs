@@ -22,12 +22,14 @@ pub struct Content {
 pub enum Message {
     SetRepository(Repository),
     SetSnapshots(Vec<SnapshotFile>),
+    ReloadSnapshots,
     Delete(Id),
     Select(Id),
 }
 
 pub enum Command {
     FetchSnapshots(String, String),
+    DeleteSnapshots(String, String, Vec<rustic_core::Id>),
 }
 
 impl Content {
@@ -86,8 +88,15 @@ impl Content {
                 commands.push(Command::FetchSnapshots(path, "password".into()))
             }
             Message::SetSnapshots(snapshots) => self.snapshots = Some(snapshots),
-            Message::Delete(_) => todo!(),
+            Message::Delete(id) => {
+                let path = self.repository.as_ref().unwrap().path.display().to_string();
+                commands.push(Command::DeleteSnapshots(path, "password".into(), vec![id]))
+            }
             Message::Select(_) => todo!(),
+            Message::ReloadSnapshots => {
+                let path = self.repository.as_ref().unwrap().path.display().to_string();
+                commands.push(Command::FetchSnapshots(path, "password".into()))
+            }
         }
         commands
     }

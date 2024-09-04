@@ -21,6 +21,7 @@ use views::content::{self, Content};
 
 use crate::app::config::{AppTheme, Repository, CONFIG_VERSION};
 use crate::app::key_bind::key_binds;
+use crate::backup;
 use crate::fl;
 
 use self::icon_cache::IconCache;
@@ -62,7 +63,6 @@ pub enum Message {
     WindowNew,
     Repository(RepositoryAction),
     CreateSnapshot,
-    DeleteSnapshot(String),
     OpenCreateRepositoryDialog,
     OpenCreateSnapshotDialog,
     DeleteRepositoryDialog,
@@ -308,6 +308,7 @@ impl Application for App {
         self.nav_model.activate(entity);
 
         if let Some(repository) = self.nav_model.data::<Repository>(entity) {
+            println!("Selected: {:?}", repository);
             let name = repository.name.clone();
             commands.push(
                 self.update(Message::Content(content::Message::SetRepository(
@@ -423,6 +424,19 @@ impl Application for App {
                                 },
                             )
                         }
+                        content::Command::DeleteSnapshots(repository, password, snapshots) => {
+                            return Command::perform(
+                                async move {
+                                    backup::snapshot::delete(&repository, &password, snapshots)
+                                },
+                                |result| match result {
+                                    Ok(_) => cosmic::app::Message::App(Message::Content(
+                                        content::Message::ReloadSnapshots,
+                                    )),
+                                    Err(_) => cosmic::app::Message::None,
+                                },
+                            )
+                        }
                     }
                 }
             }
@@ -490,16 +504,15 @@ impl Application for App {
                         return Command::none();
                     };
                     match crate::backup::snapshot(path, "password", vec!["/etc"]) {
-                        Ok(_) => {}
+                        Ok(_) => {
+                            return self.update(Message::Content(content::Message::ReloadSnapshots))
+                        }
                         Err(e) => {
                             // TODO: Show error to user.
                             eprintln!("failed to create snapshot: {}", e)
                         }
                     }
                 }
-            }
-            Message::DeleteSnapshot(id) => {
-                todo!("Implement snapshot deletion.");
             }
             Message::DialogCancel => {
                 self.dialog_pages.pop_front();

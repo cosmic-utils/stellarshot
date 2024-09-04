@@ -5,6 +5,8 @@ use super::icon_cache::{IconCache, ICON_CACHE};
 use crate::app::Flags;
 use cosmic::app::Settings;
 use cosmic::iced::{Limits, Size};
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 pub fn init() -> (Settings, Flags) {
     set_logger();
@@ -26,7 +28,11 @@ pub fn get_app_settings() -> Settings {
 }
 
 pub fn set_logger() {
-    tracing_subscriber::fmt().init();
+    std::env::set_var("RUST_LOG", "stellarshot=info");
+    tracing_subscriber::registry()
+        .with(fmt::layer())
+        .with(EnvFilter::from_default_env())
+        .init();
 }
 
 pub fn set_icon_cache() {
