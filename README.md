@@ -5,12 +5,12 @@
 
   <h3>A simple backup application using Rustic for the COSMIC™ desktop.</h3>
 
-  ![COSMIC Backups Light](https://raw.githubusercontent.com/ahoneybun/cosmic-backups/main/res/screenshots/COSMIC-Backups-Light.png#gh-light-mode-only)
+  ![Stellarshot Light](https://raw.githubusercontent.com/cosmic-utils/stellarshot/main/res/screenshots/Stellarshot-Light.png#gh-light-mode-only)
 
-  ![COSMIC Backups Dark](https://raw.githubusercontent.com/ahoneybun/cosmic-backups/main/res/screenshots/COSMIC-Backups-Dark.png#gh-dark-mode-only)
+  ![Stellarshot Dark](https://raw.githubusercontent.com/cosmic-utils/stellarshot/main/res/screenshots/Stellarshot-Dark.png#gh-dark-mode-only)
 </div>
 
-![main branch parameter](https://github.com/ahoneybun/cosmic-backups/actions/workflows/build.yml/badge.svg?branch=main)
+![main branch parameter](https://github.com/cosmic-utils/stellarshot/actions/workflows/build.yml/badge.svg?branch=main)
 
 # UNDER ACTIVE DEVELOPMENT
 
