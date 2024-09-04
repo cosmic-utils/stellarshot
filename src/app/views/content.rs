@@ -120,7 +120,7 @@ impl Content {
                 .style(theme::Button::Destructive)
                 .on_press(Message::Delete(item.id));
 
-            let details_button = widget::button(IconCache::get("info-outline-symbolic", 18))
+            let _details_button = widget::button(IconCache::get("info-outline-symbolic", 18))
                 .padding(spacing.space_xxs)
                 .style(theme::Button::Standard)
                 .on_press(Message::Select(item.id));
@@ -131,7 +131,7 @@ impl Content {
                     .align_items(Alignment::Center)
                     .spacing(spacing.space_xxs)
                     .padding([spacing.space_xxxs, spacing.space_xxs])
-                    .push(details_button)
+                    // .push(details_button)
                     .push(delete_button),
             );
 
