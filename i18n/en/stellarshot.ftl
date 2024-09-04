@@ -13,6 +13,7 @@ loading-snapshots = Loading snapshots.
 # Dialogs
 save = Save
 create = Create
+delete = Delete
 cancel = Cancel
 confirm = Confirm
 create-repo = Create a new repository
@@ -21,6 +22,8 @@ repo-location = Repository location
 selected-repo = Selected repository
 snapshots = Snapshots
 create-snapshot = Create a new snapshot
+delete-repository = Delete repository
+delete-repository-description = Deleting a repository will remove all snapshots and files.
 delete-snapshot = Delete snapshot
 snapshot-description = A snapshot is a point-in-time copy of your repository.
 

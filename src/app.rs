@@ -94,6 +94,7 @@ impl ContextPage {
 pub enum DialogPage {
     CreateRepository(String),
     CreateSnapshot,
+    DeleteRepository,
 }
 
 #[derive(Clone, Debug)]
@@ -298,6 +299,15 @@ impl Application for App {
                 .secondary_action(
                     widget::button::standard(fl!("cancel")).on_press(Message::DialogCancel),
                 ),
+            DialogPage::DeleteRepository => widget::dialog(fl!("delete-repository"))
+                .body(fl!("delete-repository-description"))
+                .primary_action(
+                    widget::button::suggested(fl!("delete"))
+                        .on_press_maybe(Some(Message::DialogComplete)),
+                )
+                .secondary_action(
+                    widget::button::standard(fl!("cancel")).on_press(Message::DialogCancel),
+                ),
         };
 
         Some(dialog.into())
@@ -496,7 +506,7 @@ impl Application for App {
                 RepositoryAction::Error(error) => log::error!("{}", error),
             },
             Message::DeleteRepositoryDialog => {
-                todo!("Implement repository deletion.");
+                self.dialog_pages.push_back(DialogPage::DeleteRepository);
             }
             Message::CreateSnapshot => {
                 if let Some(repository) = &self.content.repository {
@@ -525,6 +535,21 @@ impl Application for App {
                         }
                         DialogPage::CreateSnapshot => {
                             return self.update(Message::CreateSnapshot);
+                        }
+                        DialogPage::DeleteRepository => {
+                            if let Some(repository) = self.content.repository.clone() {
+                                if let Ok(_) = std::fs::remove_dir_all(&repository.path) {
+                                    let repositories = self.config.repositories.clone();
+                                    let repositories = repositories
+                                        .into_iter()
+                                        .filter(|r| r.path != repository.path)
+                                        .collect();
+                                    config_set!(repositories, repositories);
+                                    let entity = self.nav_model.active();
+                                    self.nav_model.remove(entity);
+                                    self.content.repository = None;
+                                }
+                            }
                         }
                     }
                 }
