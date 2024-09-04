@@ -136,7 +136,7 @@ impl App {
 
     fn about(&self) -> Element<Message> {
         let cosmic_theme::Spacing { space_xxs, .. } = cosmic::theme::active().cosmic().spacing;
-        let repository = "https://github.com/ahoneybun/Stellarshot";
+        let repository = "https://github.com/cosmic-utils/stellarshot";
         let hash = env!("VERGEN_GIT_SHA");
         let short_hash: String = hash.chars().take(7).collect();
         let date = env!("VERGEN_GIT_COMMIT_DATE");
