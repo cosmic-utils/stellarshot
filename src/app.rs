@@ -227,6 +227,7 @@ impl Application for App {
     }
 
     fn init(core: Core, flags: Self::Flags) -> (Self, Command<Self::Message>) {
+        let mut commands = vec![];
         let nav_model = segmented_button::ModelBuilder::default().build();
         let mut app = App {
             core,
@@ -247,7 +248,17 @@ impl Application for App {
             app.create_nav_item(repository, "harddisk-symbolic");
         }
 
-        (app, Command::none())
+        if let Some(entity) = app.nav_model.entity_at(0) {
+            app.nav_model.activate(entity)
+        }
+
+        if let Some(repository) = app.nav_model.active_data::<Repository>() {
+            commands.push(app.update(Message::Content(content::Message::SetRepository(
+                repository.clone(),
+            ))));
+        }
+
+        (app, Command::batch(commands))
     }
 
     fn context_drawer(&self) -> Option<Element<Message>> {
