@@ -1,10 +1,10 @@
 [Desktop Entry]
-Name=COSMIC Backups
-Exec=cosmic-backups %F
+Name=Stellarshot
+Exec=stellarshot %F
 Terminal=false
 Type=Application
 StartupNotify=true
-Icon=com.example.CosmicAppTemplate
+Icon=com.github.ahoneybun.Stellarshot.svg
 Categories=COSMIC;Utility;
 Keywords=Folder;Manager;
 MimeType=inode/directory;

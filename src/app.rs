@@ -9,10 +9,7 @@ use cosmic::app::{message, Command, Core};
 use cosmic::iced::alignment::{Horizontal, Vertical};
 use cosmic::iced::{event, keyboard::Event as KeyEvent, window, Event, Subscription};
 use cosmic::iced_core::keyboard::{Key, Modifiers};
-use cosmic::widget::menu::{
-    action::MenuAction,
-    key_bind::{KeyBind, Modifier},
-};
+use cosmic::widget::menu::{action::MenuAction, key_bind::KeyBind};
 use cosmic::widget::segmented_button::{self, EntityMut, SingleSelect};
 use cosmic::{
     cosmic_config, cosmic_theme,
@@ -20,9 +17,11 @@ use cosmic::{
     ApplicationExt,
 };
 use cosmic::{widget, Application, Apply, Element};
+use views::content::{self, Content};
 
 use crate::app::config::{AppTheme, Repository, CONFIG_VERSION};
 use crate::app::key_bind::key_binds;
+use crate::backup;
 use crate::fl;
 
 use self::icon_cache::IconCache;
@@ -32,15 +31,12 @@ pub mod icon_cache;
 mod key_bind;
 pub mod menu;
 pub mod settings;
+pub mod views;
 
-/// This is the struct that represents your application.
-/// It is used to define the data that will be used by your application.
 pub struct App {
-    /// This is the core of your application, it is used to communicate with the Cosmic runtime.
-    /// It is used to send messages to your application, and to access the resources of the Cosmic runtime.
     core: Core,
     nav_model: segmented_button::SingleSelectModel,
-    selected_repository: Option<Repository>,
+    content: Content,
     app_themes: Vec<String>,
     config_handler: Option<cosmic_config::Config>,
     config: config::StellarshotConfig,
@@ -51,11 +47,9 @@ pub struct App {
     modifiers: Modifiers,
 }
 
-/// This is the enum that contains all the possible variants that your application will need to transmit messages.
-/// This is used to communicate between the different parts of your application.
-/// If your application does not need to send messages, you can use an empty enum or `()`.
 #[derive(Debug, Clone)]
 pub enum Message {
+    Content(content::Message),
     DialogCancel,
     DialogComplete,
     DialogUpdate(DialogPage),
@@ -72,7 +66,6 @@ pub enum Message {
     OpenCreateRepositoryDialog,
     OpenCreateSnapshotDialog,
     DeleteRepositoryDialog,
-    DeleteSnapshotDialog,
 }
 
 #[derive(Debug, Clone)]
@@ -101,6 +94,7 @@ impl ContextPage {
 pub enum DialogPage {
     CreateRepository(String),
     CreateSnapshot,
+    DeleteRepository,
 }
 
 #[derive(Clone, Debug)]
@@ -115,7 +109,6 @@ pub enum Action {
     CreateRepository,
     CreateSnapshot,
     DeleteRepository,
-    DeleteSnapshot,
     Settings,
     WindowClose,
     WindowNew,
@@ -129,7 +122,6 @@ impl MenuAction for Action {
             Action::CreateRepository => Message::OpenCreateRepositoryDialog,
             Action::CreateSnapshot => Message::OpenCreateSnapshotDialog,
             Action::DeleteRepository => Message::DeleteRepositoryDialog,
-            Action::DeleteSnapshot => Message::DeleteSnapshotDialog,
             Action::Settings => Message::ToggleContextPage(ContextPage::Settings),
             Action::WindowClose => Message::WindowClose,
             Action::WindowNew => Message::WindowNew,
@@ -144,7 +136,7 @@ impl App {
 
     fn about(&self) -> Element<Message> {
         let cosmic_theme::Spacing { space_xxs, .. } = cosmic::theme::active().cosmic().spacing;
-        let repository = "https://github.com/ahoneybun/Stellarshot";
+        let repository = "https://github.com/cosmic-utils/stellarshot";
         let hash = env!("VERGEN_GIT_SHA");
         let short_hash: String = hash.chars().take(7).collect();
         let date = env!("VERGEN_GIT_COMMIT_DATE");
@@ -226,7 +218,6 @@ impl Application for App {
         &mut self.core
     }
 
-    /// This is the header of your application, it can be used to display the title of your application.
     fn header_start(&self) -> Vec<Element<Self::Message>> {
         vec![menu::menu_bar(&self.key_binds)]
     }
@@ -236,11 +227,12 @@ impl Application for App {
     }
 
     fn init(core: Core, flags: Self::Flags) -> (Self, Command<Self::Message>) {
+        let mut commands = vec![];
         let nav_model = segmented_button::ModelBuilder::default().build();
         let mut app = App {
             core,
             nav_model,
-            selected_repository: None,
+            content: Content::new(),
             app_themes: vec![fl!("match-desktop"), fl!("dark"), fl!("light")],
             context_page: ContextPage::Settings,
             config_handler: flags.config_handler,
@@ -256,7 +248,17 @@ impl Application for App {
             app.create_nav_item(repository, "harddisk-symbolic");
         }
 
-        (app, Command::none())
+        if let Some(entity) = app.nav_model.entity_at(0) {
+            app.nav_model.activate(entity)
+        }
+
+        if let Some(repository) = app.nav_model.active_data::<Repository>() {
+            commands.push(app.update(Message::Content(content::Message::SetRepository(
+                repository.clone(),
+            ))));
+        }
+
+        (app, Command::batch(commands))
     }
 
     fn context_drawer(&self) -> Option<Element<Message>> {
@@ -308,6 +310,15 @@ impl Application for App {
                 .secondary_action(
                     widget::button::standard(fl!("cancel")).on_press(Message::DialogCancel),
                 ),
+            DialogPage::DeleteRepository => widget::dialog(fl!("delete-repository"))
+                .body(fl!("delete-repository-description"))
+                .primary_action(
+                    widget::button::suggested(fl!("delete"))
+                        .on_press_maybe(Some(Message::DialogComplete)),
+                )
+                .secondary_action(
+                    widget::button::standard(fl!("cancel")).on_press(Message::DialogCancel),
+                ),
         };
 
         Some(dialog.into())
@@ -318,8 +329,14 @@ impl Application for App {
         self.nav_model.activate(entity);
 
         if let Some(repository) = self.nav_model.data::<Repository>(entity) {
-            self.selected_repository = Some(repository.clone());
-            let window_title = format!("{} - {}", repository.name, fl!("stellarshot"));
+            println!("Selected: {:?}", repository);
+            let name = repository.name.clone();
+            commands.push(
+                self.update(Message::Content(content::Message::SetRepository(
+                    repository.clone(),
+                ))),
+            );
+            let window_title = format!("{} - {}", name, fl!("stellarshot"));
             commands.push(self.set_window_title(window_title, self.main_window_id()));
         }
 
@@ -327,16 +344,7 @@ impl Application for App {
     }
 
     fn view(&self) -> Element<Self::Message> {
-        let content: Element<Self::Message> = match self.selected_repository {
-            Some(ref repository) => widget::text::title1(format!(
-                "{}: {}",
-                fl!("selected-repo"),
-                repository.name.clone()
-            ))
-            .into(),
-            None => widget::text::title1(fl!("welcome")).into(),
-        };
-        widget::container(content)
+        widget::container(self.content.view().map(Message::Content))
             .apply(widget::container)
             .width(Length::Fill)
             .height(Length::Fill)
@@ -392,14 +400,10 @@ impl Application for App {
             }),
         ];
 
-        // subscriptions.push(self.content.subscription().map(Message::Content));
-
         Subscription::batch(subscriptions)
     }
 
-    /// Handle application events here.
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
-        // Helper for updating config values efficiently
         macro_rules! config_set {
             ($name: ident, $value: expr) => {
                 match &self.config_handler {
@@ -427,6 +431,36 @@ impl Application for App {
         }
 
         match message {
+            Message::Content(message) => {
+                let commands = self.content.update(message);
+                for command in commands {
+                    match command {
+                        content::Command::FetchSnapshots(repository, password) => {
+                            return Command::perform(
+                                async move { Content::snapshots(&repository, &password) },
+                                |result| {
+                                    cosmic::app::Message::App(Message::Content(
+                                        content::Message::SetSnapshots(result),
+                                    ))
+                                },
+                            )
+                        }
+                        content::Command::DeleteSnapshots(repository, password, snapshots) => {
+                            return Command::perform(
+                                async move {
+                                    backup::snapshot::delete(&repository, &password, snapshots)
+                                },
+                                |result| match result {
+                                    Ok(_) => cosmic::app::Message::App(Message::Content(
+                                        content::Message::ReloadSnapshots,
+                                    )),
+                                    Err(_) => cosmic::app::Message::None,
+                                },
+                            )
+                        }
+                    }
+                }
+            }
             Message::ToggleContextPage(context_page) => {
                 //TODO: ensure context menus are closed
                 if self.context_page == context_page {
@@ -483,18 +517,17 @@ impl Application for App {
                 RepositoryAction::Error(error) => log::error!("{}", error),
             },
             Message::DeleteRepositoryDialog => {
-                println!("Deleting repository");
-            }
-            Message::DeleteSnapshotDialog => {
-                println!("Deleting snapshot");
+                self.dialog_pages.push_back(DialogPage::DeleteRepository);
             }
             Message::CreateSnapshot => {
-                if let Some(repository) = &self.selected_repository {
+                if let Some(repository) = &self.content.repository {
                     let Some(path) = repository.path.to_str() else {
                         return Command::none();
                     };
                     match crate::backup::snapshot(path, "password", vec!["/etc"]) {
-                        Ok(_) => {}
+                        Ok(_) => {
+                            return self.update(Message::Content(content::Message::ReloadSnapshots))
+                        }
                         Err(e) => {
                             // TODO: Show error to user.
                             eprintln!("failed to create snapshot: {}", e)
@@ -513,6 +546,21 @@ impl Application for App {
                         }
                         DialogPage::CreateSnapshot => {
                             return self.update(Message::CreateSnapshot);
+                        }
+                        DialogPage::DeleteRepository => {
+                            if let Some(repository) = self.content.repository.clone() {
+                                if let Ok(_) = std::fs::remove_dir_all(&repository.path) {
+                                    let repositories = self.config.repositories.clone();
+                                    let repositories = repositories
+                                        .into_iter()
+                                        .filter(|r| r.path != repository.path)
+                                        .collect();
+                                    config_set!(repositories, repositories);
+                                    let entity = self.nav_model.active();
+                                    self.nav_model.remove(entity);
+                                    self.content.repository = None;
+                                }
+                            }
                         }
                     }
                 }

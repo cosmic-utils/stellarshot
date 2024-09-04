@@ -37,7 +37,7 @@ pub fn snapshot(repository: &str, password: &str, paths: Vec<&str>) -> Result<()
     Ok(())
 }
 
-pub fn snapshots(repository: &str, password: &str) -> Result<Vec<SnapshotFile>, Box<dyn Error>> {
+pub fn fetch(repository: &str, password: &str) -> Result<Vec<SnapshotFile>, Box<dyn Error>> {
     let backends = BackendOptions::default()
         .repository(repository)
         .to_backends()?;
@@ -53,6 +53,28 @@ pub fn snapshots(repository: &str, password: &str) -> Result<Vec<SnapshotFile>, 
     let snapshots = repo.get_all_snapshots()?;
 
     Ok(snapshots)
+}
+
+pub fn delete(
+    repository: &str,
+    password: &str,
+    snapshots: Vec<rustic_core::Id>,
+) -> Result<(), Box<dyn Error>> {
+    let backends = BackendOptions::default()
+        .repository(repository)
+        .to_backends()?;
+
+    println!("successfully initialized backends:\n{backends:#?}");
+
+    let repo_opts = RepositoryOptions::default().password(password);
+
+    let repo = Repository::new(&repo_opts, backends)?
+        .open()?
+        .to_indexed_ids()?;
+
+    repo.delete_snapshots(&snapshots)?;
+
+    Ok(())
 }
 
 #[cfg(test)]
