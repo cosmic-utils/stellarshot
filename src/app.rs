@@ -32,11 +32,7 @@ pub mod menu;
 pub mod settings;
 pub mod views;
 
-/// This is the struct that represents your application.
-/// It is used to define the data that will be used by your application.
 pub struct App {
-    /// This is the core of your application, it is used to communicate with the Cosmic runtime.
-    /// It is used to send messages to your application, and to access the resources of the Cosmic runtime.
     core: Core,
     nav_model: segmented_button::SingleSelectModel,
     content: Content,
@@ -50,9 +46,6 @@ pub struct App {
     modifiers: Modifiers,
 }
 
-/// This is the enum that contains all the possible variants that your application will need to transmit messages.
-/// This is used to communicate between the different parts of your application.
-/// If your application does not need to send messages, you can use an empty enum or `()`.
 #[derive(Debug, Clone)]
 pub enum Message {
     Content(content::Message),
@@ -69,10 +62,10 @@ pub enum Message {
     WindowNew,
     Repository(RepositoryAction),
     CreateSnapshot,
+    DeleteSnapshot(String),
     OpenCreateRepositoryDialog,
     OpenCreateSnapshotDialog,
     DeleteRepositoryDialog,
-    DeleteSnapshotDialog,
 }
 
 #[derive(Debug, Clone)]
@@ -115,7 +108,6 @@ pub enum Action {
     CreateRepository,
     CreateSnapshot,
     DeleteRepository,
-    DeleteSnapshot,
     Settings,
     WindowClose,
     WindowNew,
@@ -129,7 +121,6 @@ impl MenuAction for Action {
             Action::CreateRepository => Message::OpenCreateRepositoryDialog,
             Action::CreateSnapshot => Message::OpenCreateSnapshotDialog,
             Action::DeleteRepository => Message::DeleteRepositoryDialog,
-            Action::DeleteSnapshot => Message::DeleteSnapshotDialog,
             Action::Settings => Message::ToggleContextPage(ContextPage::Settings),
             Action::WindowClose => Message::WindowClose,
             Action::WindowNew => Message::WindowNew,
@@ -226,7 +217,6 @@ impl Application for App {
         &mut self.core
     }
 
-    /// This is the header of your application, it can be used to display the title of your application.
     fn header_start(&self) -> Vec<Element<Self::Message>> {
         vec![menu::menu_bar(&self.key_binds)]
     }
@@ -388,14 +378,10 @@ impl Application for App {
             }),
         ];
 
-        // subscriptions.push(self.content.subscription().map(Message::Content));
-
         Subscription::batch(subscriptions)
     }
 
-    /// Handle application events here.
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
-        // Helper for updating config values efficiently
         macro_rules! config_set {
             ($name: ident, $value: expr) => {
                 match &self.config_handler {
@@ -496,10 +482,7 @@ impl Application for App {
                 RepositoryAction::Error(error) => log::error!("{}", error),
             },
             Message::DeleteRepositoryDialog => {
-                println!("Deleting repository");
-            }
-            Message::DeleteSnapshotDialog => {
-                println!("Deleting snapshot");
+                todo!("Implement repository deletion.");
             }
             Message::CreateSnapshot => {
                 if let Some(repository) = &self.content.repository {
@@ -514,6 +497,9 @@ impl Application for App {
                         }
                     }
                 }
+            }
+            Message::DeleteSnapshot(id) => {
+                todo!("Implement snapshot deletion.");
             }
             Message::DialogCancel => {
                 self.dialog_pages.pop_front();

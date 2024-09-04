@@ -19,6 +19,7 @@ create-repo = Create a new repository
 delete-repo = Delete repository
 repo-location = Repository location
 selected-repo = Selected repository
+snapshots = Snapshots
 create-snapshot = Create a new snapshot
 delete-snapshot = Delete snapshot
 snapshot-description = A snapshot is a point-in-time copy of your repository.

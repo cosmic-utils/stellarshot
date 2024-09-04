@@ -80,6 +80,7 @@ impl Content {
         let mut commands = vec![];
         match message {
             Message::SetRepository(repository) => {
+                self.snapshots = None;
                 self.repository = Some(repository.clone());
                 let path = repository.path.display().to_string();
                 commands.push(Command::FetchSnapshots(path, "password".into()))
@@ -94,20 +95,17 @@ impl Content {
     pub fn list_view<'a>(&'a self, repository: &'a Repository) -> Element<'a, Message> {
         let spacing = theme::active().cosmic().spacing;
 
-        if self.snapshots.is_none() {
+        let Some(ref snapshots) = self.snapshots else {
             return self.loading();
-        }
+        };
 
-        if self.snapshots.as_ref().unwrap().is_empty() {
+        if snapshots.is_empty() {
             return self.empty(repository);
         }
 
-        let mut items = widget::list::list_column()
-            .style(theme::Container::ContextDrawer)
-            .spacing(spacing.space_xxxs)
-            .padding([spacing.space_none, spacing.space_xxs]);
+        let mut section = widget::settings::view_section(fl!("snapshots"));
 
-        for item in self.snapshots.as_ref().unwrap() {
+        for item in snapshots {
             let delete_button = widget::button(IconCache::get("user-trash-full-symbolic", 18))
                 .padding(spacing.space_xxs)
                 .style(theme::Button::Destructive)
@@ -118,23 +116,24 @@ impl Content {
                 .style(theme::Button::Standard)
                 .on_press(Message::Select(item.id));
 
-            let task_item_text = widget::text(item.id.to_string()).width(Length::Fill);
+            let row = widget::settings::item(
+                item.id.to_string(),
+                widget::row::with_capacity(4)
+                    .align_items(Alignment::Center)
+                    .spacing(spacing.space_xxs)
+                    .padding([spacing.space_xxxs, spacing.space_xxs])
+                    .push(details_button)
+                    .push(delete_button),
+            );
 
-            let row = widget::row::with_capacity(4)
-                .align_items(Alignment::Center)
-                .spacing(spacing.space_xxs)
-                .padding([spacing.space_xxxs, spacing.space_xxs])
-                .push(task_item_text)
-                .push(details_button)
-                .push(delete_button);
-
-            items = items.add(row);
+            section = section.add(row);
         }
 
         widget::column::with_capacity(2)
             .spacing(spacing.space_xxs)
+            .padding(spacing.space_xxs)
             .push(self.repository_header(repository))
-            .push(items)
+            .push(section)
             .apply(widget::container)
             .height(Length::Shrink)
             .apply(widget::scrollable)
@@ -172,7 +171,6 @@ impl Content {
         widget::row::with_capacity(3)
             .align_items(Alignment::Center)
             .spacing(spacing.space_s)
-            .padding([spacing.space_none, spacing.space_xxs])
             .push(widget::text::title3(&repository.name).width(Length::Fill))
             .into()
     }
