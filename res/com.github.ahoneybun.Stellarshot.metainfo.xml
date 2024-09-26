@@ -17,6 +17,11 @@
   <icon type="remote" height="256" width="256">https://raw.githubusercontent.com/ahoneybun/Stellarshot/master/res/icons/hicolor/256x256/appscom.github.ahoneybun.Stellarshot.svg</icon>
   <screenshots>
   </screenshots>
+  <categories>
+  <category>Utility</category>
+    <category>Game</category>
+    <category>Education</category>
+  </categories>
   <provides>
     <mimetypes>
       <mimetype>text/plain</mimetype>
