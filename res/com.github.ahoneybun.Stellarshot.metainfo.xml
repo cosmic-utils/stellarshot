@@ -26,8 +26,6 @@
     <mimetypes>
       <mimetype>text/plain</mimetype>
     </mimetypes>
-    <binaries>
-      <binary>stellarshot</binary>
-    </binaries>
+    <binary>stellarshot</binary>
   </provides>
 </component>
