@@ -19,14 +19,13 @@
   </screenshots>
   <categories>
     <category>Utility</category>
-    <category>COSMIC</category>
+    <category>Backups</category>
   </categories>
   <provides>
+    <id>com.system76.CosmicApplication</id>
     <mimetypes>
       <mimetype>text/plain</mimetype>
     </mimetypes>
-    <binaries>
-      <binary>stellarshot</binary>
-    </binaries>
+    <binary>stellarshot</binary>
   </provides>
 </component>
