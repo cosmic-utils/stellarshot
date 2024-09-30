@@ -6,6 +6,9 @@
   <project_group>COSMIC</project_group>
   <developer_name>Aaron Honeycutt</developer_name>
   <update_contact>aaronhoneycutt@proton.me</update_contact>
+  <url type="homepage">https://github.com/cosmic-utils/stellarshot</url>
+  <url type="bugtracker">https://github.com/cosmic-utils/stellarshot/issues</url>
+  <content_rating type="oars-1.1" />
   <url type="homepage"></url>
   <url type="bugtracker"></url>
   <name>Stellarshot</name>
