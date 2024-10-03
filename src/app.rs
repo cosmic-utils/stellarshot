@@ -63,7 +63,7 @@ pub enum Message {
     WindowClose,
     WindowNew,
     Repository(RepositoryAction),
-    CreateSnapshot(Vec<Url>, String),
+    CreateSnapshot(Vec<Url>),
     RequestFileForRepository,
     OpenCreateRepositoryDialog(String),
     OpenCreateSnapshotDialog(Vec<Url>),
@@ -98,7 +98,7 @@ impl ContextPage {
 pub enum DialogPage {
     Password(Repository, String),
     CreateRepository(String, String),
-    CreateSnapshot(Vec<Url>, String),
+    CreateSnapshot(Vec<Url>),
     DeleteRepository,
 }
 
@@ -301,30 +301,16 @@ impl Application for App {
                     ])
                     .spacing(spacing.space_xxs),
                 ),
-            DialogPage::CreateSnapshot(files, password) => widget::dialog(fl!("create-snapshot"))
+            DialogPage::CreateSnapshot(files) => widget::dialog(fl!("create-snapshot"))
                 .body(fl!("snapshot-description"))
                 .control(
-                    widget::column()
-                        .push(widget::column::with_children(
-                            files
-                                .iter()
-                                .map(|file| widget::text::body(file.path()).into())
-                                .collect(),
-                        ))
-                        .push(
-                            widget::text_input(fl!("password"), password)
-                                .password()
-                                .label("Password")
-                                .id(self.dialog_text_input.clone())
-                                .on_input(move |password| {
-                                    Message::DialogUpdate(DialogPage::CreateSnapshot(
-                                        files.clone(),
-                                        password,
-                                    ))
-                                })
-                                .on_submit(Message::DialogComplete),
-                        )
-                        .spacing(spacing.space_xxs),
+                    widget::column::with_children(
+                        files
+                            .iter()
+                            .map(|file| widget::text::body(file.path()).into())
+                            .collect(),
+                    )
+                    .spacing(spacing.space_xxs),
                 )
                 .primary_action(
                     widget::button::suggested(fl!("create"))
@@ -581,11 +567,18 @@ impl Application for App {
             }
             Message::OpenCreateSnapshotDialog(files) => {
                 self.dialog_pages
-                    .push_back(DialogPage::CreateSnapshot(files, String::new()));
+                    .push_back(DialogPage::CreateSnapshot(files));
             }
             Message::OpenPasswordDialog(repository) => {
-                self.dialog_pages
-                    .push_back(DialogPage::Password(repository, String::new()));
+                let Some(current_repository) = &self.content.repository else {
+                    self.dialog_pages
+                        .push_back(DialogPage::Password(repository, String::new()));
+                    return Command::none();
+                };
+                if &repository != current_repository {
+                    self.dialog_pages
+                        .push_back(DialogPage::Password(repository, String::new()));
+                }
             }
             Message::Repository(state) => match state {
                 RepositoryAction::Init(path, password) => {
@@ -627,14 +620,14 @@ impl Application for App {
             Message::DeleteRepositoryDialog => {
                 self.dialog_pages.push_back(DialogPage::DeleteRepository);
             }
-            Message::CreateSnapshot(files, password) => {
+            Message::CreateSnapshot(files) => {
                 if let Some(repository) = &self.content.repository {
                     let Some(path) = repository.path.to_str() else {
                         return Command::none();
                     };
                     match crate::backup::snapshot(
                         path,
-                        &password,
+                        &self.content.password,
                         files.iter().map(|f| f.path()).collect(),
                     ) {
                         Ok(_) => {
@@ -658,8 +651,8 @@ impl Application for App {
                                 path, password,
                             )));
                         }
-                        DialogPage::CreateSnapshot(files, password) => {
-                            return self.update(Message::CreateSnapshot(files, password));
+                        DialogPage::CreateSnapshot(files) => {
+                            return self.update(Message::CreateSnapshot(files));
                         }
                         DialogPage::Password(repository, password) => {
                             return self.update(Message::Content(content::Message::SetRepository(

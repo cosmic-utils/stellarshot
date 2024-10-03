@@ -16,7 +16,7 @@ use crate::{
 pub struct Content {
     pub repository: Option<Repository>,
     snapshots: Option<Vec<SnapshotFile>>,
-    password: String,
+    pub(crate) password: String,
 }
 
 #[derive(Debug, Clone)]
