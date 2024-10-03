@@ -202,7 +202,6 @@ impl App {
             .icon(IconCache::get(icon, 18))
             .text(repository.name.clone())
             .data(repository.clone())
-            .activate()
     }
 }
 
@@ -232,7 +231,6 @@ impl Application for App {
     }
 
     fn init(core: Core, flags: Self::Flags) -> (Self, Command<Self::Message>) {
-        let mut commands = vec![];
         let nav_model = segmented_button::ModelBuilder::default().build();
         let mut app = App {
             core,
@@ -253,15 +251,7 @@ impl Application for App {
             app.create_nav_item(repository, "harddisk-symbolic");
         }
 
-        if let Some(entity) = app.nav_model.entity_at(0) {
-            app.nav_model.activate(entity)
-        }
-
-        if let Some(repository) = app.nav_model.active_data::<Repository>() {
-            commands.push(app.update(Message::OpenPasswordDialog(repository.clone())));
-        }
-
-        (app, Command::batch(commands))
+        (app, Command::none())
     }
 
     fn context_drawer(&self) -> Option<Element<Message>> {
@@ -343,27 +333,29 @@ impl Application for App {
                 .secondary_action(
                     widget::button::standard(fl!("cancel")).on_press(Message::DialogCancel),
                 ),
-            DialogPage::Password(repository, password) => widget::dialog(fl!("password"))
-                .primary_action(
-                    widget::button::suggested(fl!("ok"))
-                        .on_press_maybe(Some(Message::DialogComplete)),
-                )
-                .secondary_action(
-                    widget::button::standard(fl!("cancel")).on_press(Message::DialogCancel),
-                )
-                .control(
-                    widget::text_input("", password)
-                        .password()
-                        .label("Password")
-                        .id(self.dialog_text_input.clone())
-                        .on_input(move |password| {
-                            Message::DialogUpdate(DialogPage::Password(
-                                repository.clone(),
-                                password,
-                            ))
-                        })
-                        .on_submit(Message::DialogComplete),
-                ),
+            DialogPage::Password(repository, password) => {
+                widget::dialog(format!("{} for {}", fl!("password"), repository.name))
+                    .primary_action(
+                        widget::button::suggested(fl!("ok"))
+                            .on_press_maybe(Some(Message::DialogComplete)),
+                    )
+                    .secondary_action(
+                        widget::button::standard(fl!("cancel")).on_press(Message::DialogCancel),
+                    )
+                    .control(
+                        widget::text_input("", password)
+                            .password()
+                            .label("Password")
+                            .id(self.dialog_text_input.clone())
+                            .on_input(move |password| {
+                                Message::DialogUpdate(DialogPage::Password(
+                                    repository.clone(),
+                                    password,
+                                ))
+                            })
+                            .on_submit(Message::DialogComplete),
+                    )
+            }
             DialogPage::DeleteRepository => widget::dialog(fl!("delete-repository"))
                 .body(fl!("delete-repository-description"))
                 .primary_action(
