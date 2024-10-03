@@ -20,13 +20,15 @@ This application should NOT be trusted at this moment, up until its first releas
 
 ## Current features
 
-- [x] Creating a repository with a hardcoded password
-- [x] Creating a new snapshot (blank for now) into a selected repository
+- [x] Create a repository with a user set password
+- [x] Create a new snapshot in the selected repository with custom file(s)
+- [x] Delete a selected repository
+- [x] Delete snapshots in the selected repository
 
 ## Planned features
 
-- [ ] Creating a repository with a user set password
-- [ ] Create and delete snapshots into any selected repository
+- [ ] Create a snapshot with selected folder(s) and/or file(s)
+- [ ] Restore from a snapshot
 
 ## Install
 
