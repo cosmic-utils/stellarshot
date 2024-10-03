@@ -69,6 +69,7 @@ pub enum Message {
     OpenCreateSnapshotDialog(Vec<Url>),
     DeleteRepositoryDialog,
     RequestFilesForSnapshot,
+    OpenPasswordDialog(Repository),
 }
 
 #[derive(Debug, Clone)]
@@ -95,6 +96,7 @@ impl ContextPage {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DialogPage {
+    Password(Repository, String),
     CreateRepository(String, String),
     CreateSnapshot(Vec<Url>, String),
     DeleteRepository,
@@ -256,9 +258,7 @@ impl Application for App {
         }
 
         if let Some(repository) = app.nav_model.active_data::<Repository>() {
-            commands.push(app.update(Message::Content(content::Message::SetRepository(
-                repository.clone(),
-            ))));
+            commands.push(app.update(Message::OpenPasswordDialog(repository.clone())));
         }
 
         (app, Command::batch(commands))
@@ -306,6 +306,7 @@ impl Application for App {
                                     password,
                                 ))
                             })
+                            .on_submit(Message::DialogComplete)
                             .into(),
                     ])
                     .spacing(spacing.space_xxs),
@@ -330,7 +331,8 @@ impl Application for App {
                                         files.clone(),
                                         password,
                                     ))
-                                }),
+                                })
+                                .on_submit(Message::DialogComplete),
                         )
                         .spacing(spacing.space_xxs),
                 )
@@ -340,6 +342,27 @@ impl Application for App {
                 )
                 .secondary_action(
                     widget::button::standard(fl!("cancel")).on_press(Message::DialogCancel),
+                ),
+            DialogPage::Password(repository, password) => widget::dialog(fl!("password"))
+                .primary_action(
+                    widget::button::suggested(fl!("ok"))
+                        .on_press_maybe(Some(Message::DialogComplete)),
+                )
+                .secondary_action(
+                    widget::button::standard(fl!("cancel")).on_press(Message::DialogCancel),
+                )
+                .control(
+                    widget::text_input("", password)
+                        .password()
+                        .label("Password")
+                        .id(self.dialog_text_input.clone())
+                        .on_input(move |password| {
+                            Message::DialogUpdate(DialogPage::Password(
+                                repository.clone(),
+                                password,
+                            ))
+                        })
+                        .on_submit(Message::DialogComplete),
                 ),
             DialogPage::DeleteRepository => widget::dialog(fl!("delete-repository"))
                 .body(fl!("delete-repository-description"))
@@ -362,11 +385,7 @@ impl Application for App {
         if let Some(repository) = self.nav_model.data::<Repository>(entity) {
             println!("Selected: {:?}", repository);
             let name = repository.name.clone();
-            commands.push(
-                self.update(Message::Content(content::Message::SetRepository(
-                    repository.clone(),
-                ))),
-            );
+            commands.push(self.update(Message::OpenPasswordDialog(repository.clone())));
             let window_title = format!("{} - {}", name, fl!("stellarshot"));
             commands.push(self.set_window_title(window_title, self.main_window_id()));
         }
@@ -572,6 +591,10 @@ impl Application for App {
                 self.dialog_pages
                     .push_back(DialogPage::CreateSnapshot(files, String::new()));
             }
+            Message::OpenPasswordDialog(repository) => {
+                self.dialog_pages
+                    .push_back(DialogPage::Password(repository, String::new()));
+            }
             Message::Repository(state) => match state {
                 RepositoryAction::Init(path, password) => {
                     let init_path = path.clone();
@@ -645,6 +668,11 @@ impl Application for App {
                         }
                         DialogPage::CreateSnapshot(files, password) => {
                             return self.update(Message::CreateSnapshot(files, password));
+                        }
+                        DialogPage::Password(repository, password) => {
+                            return self.update(Message::Content(content::Message::SetRepository(
+                                repository, password,
+                            )));
                         }
                         DialogPage::DeleteRepository => {
                             if let Some(repository) = self.content.repository.clone() {

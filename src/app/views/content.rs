@@ -16,14 +16,15 @@ use crate::{
 pub struct Content {
     pub repository: Option<Repository>,
     snapshots: Option<Vec<SnapshotFile>>,
+    password: String,
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    SetRepository(Repository),
+    SetRepository(Repository, String),
     SetSnapshots(Vec<SnapshotFile>),
     ReloadSnapshots,
-    Delete(Id),
+    Delete(Id, String),
     Select(Id),
 }
 
@@ -37,6 +38,7 @@ impl Content {
         Self {
             repository: None,
             snapshots: None,
+            password: String::new(),
         }
     }
 
@@ -81,16 +83,17 @@ impl Content {
     pub fn update(&mut self, message: Message) -> Vec<Command> {
         let mut commands = vec![];
         match message {
-            Message::SetRepository(repository) => {
+            Message::SetRepository(repository, password) => {
+                self.password = password;
                 self.snapshots = None;
                 self.repository = Some(repository.clone());
                 let path = repository.path.display().to_string();
-                commands.push(Command::FetchSnapshots(path, "password".into()))
+                commands.push(Command::FetchSnapshots(path, self.password.clone()))
             }
             Message::SetSnapshots(snapshots) => self.snapshots = Some(snapshots),
-            Message::Delete(id) => {
+            Message::Delete(id, password) => {
                 let path = self.repository.as_ref().unwrap().path.display().to_string();
-                commands.push(Command::DeleteSnapshots(path, "password".into(), vec![id]))
+                commands.push(Command::DeleteSnapshots(path, password, vec![id]))
             }
             Message::Select(_) => todo!(),
             Message::ReloadSnapshots => {
@@ -118,7 +121,7 @@ impl Content {
             let delete_button = widget::button(IconCache::get("user-trash-full-symbolic", 18))
                 .padding(spacing.space_xxs)
                 .style(theme::Button::Destructive)
-                .on_press(Message::Delete(item.id));
+                .on_press(Message::Delete(item.id, self.password.clone()));
 
             let _details_button = widget::button(IconCache::get("info-outline-symbolic", 18))
                 .padding(spacing.space_xxs)

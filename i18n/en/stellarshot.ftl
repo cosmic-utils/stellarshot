@@ -12,6 +12,7 @@ loading-snapshots = Loading snapshots.
 
 # Dialogs
 save = Save
+ok = Ok
 create = Create
 delete = Delete
 cancel = Cancel
