@@ -5,6 +5,7 @@ use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
 use std::{env, process};
 
+use ashpd::url::Url;
 use cosmic::app::{message, Command, Core};
 use cosmic::iced::alignment::{Horizontal, Vertical};
 use cosmic::iced::{event, keyboard::Event as KeyEvent, window, Event, Subscription};
@@ -62,15 +63,18 @@ pub enum Message {
     WindowClose,
     WindowNew,
     Repository(RepositoryAction),
-    CreateSnapshot,
-    OpenCreateRepositoryDialog,
-    OpenCreateSnapshotDialog,
+    CreateSnapshot(Vec<Url>),
+    RequestFileForRepository,
+    OpenCreateRepositoryDialog(String),
+    OpenCreateSnapshotDialog(Vec<Url>),
     DeleteRepositoryDialog,
+    RequestFilesForSnapshot,
+    OpenPasswordDialog(Repository),
 }
 
 #[derive(Debug, Clone)]
 pub enum RepositoryAction {
-    Init(String),
+    Init(String, String),
     Created(Repository),
     Error(String),
 }
@@ -92,8 +96,9 @@ impl ContextPage {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DialogPage {
-    CreateRepository(String),
-    CreateSnapshot,
+    Password(Repository, String),
+    CreateRepository(String, String),
+    CreateSnapshot(Vec<Url>),
     DeleteRepository,
 }
 
@@ -119,8 +124,8 @@ impl MenuAction for Action {
     fn message(&self) -> Self::Message {
         match self {
             Action::About => Message::ToggleContextPage(ContextPage::About),
-            Action::CreateRepository => Message::OpenCreateRepositoryDialog,
-            Action::CreateSnapshot => Message::OpenCreateSnapshotDialog,
+            Action::CreateRepository => Message::RequestFileForRepository,
+            Action::CreateSnapshot => Message::RequestFilesForSnapshot,
             Action::DeleteRepository => Message::DeleteRepositoryDialog,
             Action::Settings => Message::ToggleContextPage(ContextPage::Settings),
             Action::WindowClose => Message::WindowClose,
@@ -197,7 +202,6 @@ impl App {
             .icon(IconCache::get(icon, 18))
             .text(repository.name.clone())
             .data(repository.clone())
-            .activate()
     }
 }
 
@@ -227,7 +231,6 @@ impl Application for App {
     }
 
     fn init(core: Core, flags: Self::Flags) -> (Self, Command<Self::Message>) {
-        let mut commands = vec![];
         let nav_model = segmented_button::ModelBuilder::default().build();
         let mut app = App {
             core,
@@ -248,17 +251,7 @@ impl Application for App {
             app.create_nav_item(repository, "harddisk-symbolic");
         }
 
-        if let Some(entity) = app.nav_model.entity_at(0) {
-            app.nav_model.activate(entity)
-        }
-
-        if let Some(repository) = app.nav_model.active_data::<Repository>() {
-            commands.push(app.update(Message::Content(content::Message::SetRepository(
-                repository.clone(),
-            ))));
-        }
-
-        (app, Command::batch(commands))
+        (app, Command::none())
     }
 
     fn context_drawer(&self) -> Option<Element<Message>> {
@@ -281,7 +274,7 @@ impl Application for App {
         let spacing = cosmic::theme::active().cosmic().spacing;
 
         let dialog = match dialog_page {
-            DialogPage::CreateRepository(name) => widget::dialog(fl!("create-repo"))
+            DialogPage::CreateRepository(directory, password) => widget::dialog(fl!("create-repo"))
                 .primary_action(
                     widget::button::suggested(fl!("save"))
                         .on_press_maybe(Some(Message::DialogComplete)),
@@ -291,18 +284,34 @@ impl Application for App {
                 )
                 .control(
                     widget::column::with_children(vec![
-                        widget::text::body(fl!("repo-location")).into(),
-                        widget::text_input("", name.as_str())
+                        widget::text::body(format!("{}: {}", fl!("repo-location"), directory))
+                            .into(),
+                        widget::text_input("", password)
+                            .password()
+                            .label("Password")
                             .id(self.dialog_text_input.clone())
-                            .on_input(move |name| {
-                                Message::DialogUpdate(DialogPage::CreateRepository(name))
+                            .on_input(move |password| {
+                                Message::DialogUpdate(DialogPage::CreateRepository(
+                                    directory.clone(),
+                                    password,
+                                ))
                             })
+                            .on_submit(Message::DialogComplete)
                             .into(),
                     ])
                     .spacing(spacing.space_xxs),
                 ),
-            DialogPage::CreateSnapshot => widget::dialog(fl!("create-snapshot"))
+            DialogPage::CreateSnapshot(files) => widget::dialog(fl!("create-snapshot"))
                 .body(fl!("snapshot-description"))
+                .control(
+                    widget::column::with_children(
+                        files
+                            .iter()
+                            .map(|file| widget::text::body(file.path()).into())
+                            .collect(),
+                    )
+                    .spacing(spacing.space_xxs),
+                )
                 .primary_action(
                     widget::button::suggested(fl!("create"))
                         .on_press_maybe(Some(Message::DialogComplete)),
@@ -310,6 +319,29 @@ impl Application for App {
                 .secondary_action(
                     widget::button::standard(fl!("cancel")).on_press(Message::DialogCancel),
                 ),
+            DialogPage::Password(repository, password) => {
+                widget::dialog(format!("{} for {}", fl!("password"), repository.name))
+                    .primary_action(
+                        widget::button::suggested(fl!("ok"))
+                            .on_press_maybe(Some(Message::DialogComplete)),
+                    )
+                    .secondary_action(
+                        widget::button::standard(fl!("cancel")).on_press(Message::DialogCancel),
+                    )
+                    .control(
+                        widget::text_input("", password)
+                            .password()
+                            .label("Password")
+                            .id(self.dialog_text_input.clone())
+                            .on_input(move |password| {
+                                Message::DialogUpdate(DialogPage::Password(
+                                    repository.clone(),
+                                    password,
+                                ))
+                            })
+                            .on_submit(Message::DialogComplete),
+                    )
+            }
             DialogPage::DeleteRepository => widget::dialog(fl!("delete-repository"))
                 .body(fl!("delete-repository-description"))
                 .primary_action(
@@ -331,11 +363,7 @@ impl Application for App {
         if let Some(repository) = self.nav_model.data::<Repository>(entity) {
             println!("Selected: {:?}", repository);
             let name = repository.name.clone();
-            commands.push(
-                self.update(Message::Content(content::Message::SetRepository(
-                    repository.clone(),
-                ))),
-            );
+            commands.push(self.update(Message::OpenPasswordDialog(repository.clone())));
             let window_title = format!("{} - {}", name, fl!("stellarshot"));
             commands.push(self.set_window_title(window_title, self.main_window_id()));
         }
@@ -471,16 +499,89 @@ impl Application for App {
                 }
                 self.set_context_title(context_page.title());
             }
-            Message::OpenCreateRepositoryDialog => {
+            Message::RequestFileForRepository => {
+                return Command::perform(
+                    async {
+                        ashpd::desktop::file_chooser::SelectedFiles::open_file()
+                            .title("Select a directory for the repository")
+                            .directory(true)
+                            .multiple(false)
+                            .send()
+                            .await
+                    },
+                    |result| match result {
+                        Ok(result) => {
+                            let Ok(files) = result.response() else {
+                                log::error!("response error");
+                                return cosmic::app::Message::None;
+                            };
+
+                            let Some(file) = files.uris().get(0) else {
+                                log::error!("no file selected");
+                                return cosmic::app::Message::None;
+                            };
+
+                            cosmic::app::Message::App(Message::OpenCreateRepositoryDialog(
+                                file.path().to_string(),
+                            ))
+                        }
+                        Err(err) => {
+                            log::error!("failed to open file chooser: {}", err);
+                            cosmic::app::Message::None
+                        }
+                    },
+                )
+            }
+            Message::RequestFilesForSnapshot => {
+                return Command::perform(
+                    async {
+                        ashpd::desktop::file_chooser::SelectedFiles::open_file()
+                            .title("Select files to store in the repository")
+                            .directory(false)
+                            .multiple(true)
+                            .send()
+                            .await
+                    },
+                    |result| match result {
+                        Ok(result) => {
+                            let Ok(files) = result.response() else {
+                                log::error!("response error");
+                                return cosmic::app::Message::None;
+                            };
+
+                            cosmic::app::Message::App(Message::OpenCreateSnapshotDialog(
+                                files.uris().to_vec(),
+                            ))
+                        }
+                        Err(err) => {
+                            log::error!("failed to open file chooser: {}", err);
+                            cosmic::app::Message::None
+                        }
+                    },
+                )
+            }
+            Message::OpenCreateRepositoryDialog(path) => {
                 self.dialog_pages
-                    .push_back(DialogPage::CreateRepository(String::new()));
+                    .push_back(DialogPage::CreateRepository(path, String::new()));
                 return widget::text_input::focus(self.dialog_text_input.clone());
             }
-            Message::OpenCreateSnapshotDialog => {
-                self.dialog_pages.push_back(DialogPage::CreateSnapshot);
+            Message::OpenCreateSnapshotDialog(files) => {
+                self.dialog_pages
+                    .push_back(DialogPage::CreateSnapshot(files));
+            }
+            Message::OpenPasswordDialog(repository) => {
+                let Some(current_repository) = &self.content.repository else {
+                    self.dialog_pages
+                        .push_back(DialogPage::Password(repository, String::new()));
+                    return Command::none();
+                };
+                if &repository != current_repository {
+                    self.dialog_pages
+                        .push_back(DialogPage::Password(repository, String::new()));
+                }
             }
             Message::Repository(state) => match state {
-                RepositoryAction::Init(path) => {
+                RepositoryAction::Init(path, password) => {
                     let init_path = path.clone();
                     let name = PathBuf::from(&path)
                         .file_name()
@@ -493,7 +594,7 @@ impl Application for App {
                     };
                     self.create_nav_item(repository.clone(), "timer-sand-symbolic");
                     return Command::perform(
-                        async move { crate::backup::init(&init_path, "password") },
+                        async move { crate::backup::init(&init_path, &password) },
                         |result| match result {
                             Ok(_) => message::app(Message::Repository(RepositoryAction::Created(
                                 repository,
@@ -519,18 +620,22 @@ impl Application for App {
             Message::DeleteRepositoryDialog => {
                 self.dialog_pages.push_back(DialogPage::DeleteRepository);
             }
-            Message::CreateSnapshot => {
+            Message::CreateSnapshot(files) => {
                 if let Some(repository) = &self.content.repository {
                     let Some(path) = repository.path.to_str() else {
                         return Command::none();
                     };
-                    match crate::backup::snapshot(path, "password", vec!["/etc"]) {
+                    match crate::backup::snapshot(
+                        path,
+                        &self.content.password,
+                        files.iter().map(|f| f.path()).collect(),
+                    ) {
                         Ok(_) => {
                             return self.update(Message::Content(content::Message::ReloadSnapshots))
                         }
                         Err(e) => {
                             // TODO: Show error to user.
-                            eprintln!("failed to create snapshot: {}", e)
+                            log::error!("failed to create snapshot: {}", e)
                         }
                     }
                 }
@@ -541,11 +646,18 @@ impl Application for App {
             Message::DialogComplete => {
                 if let Some(dialog_page) = self.dialog_pages.pop_front() {
                     match dialog_page {
-                        DialogPage::CreateRepository(path) => {
-                            return self.update(Message::Repository(RepositoryAction::Init(path)));
+                        DialogPage::CreateRepository(path, password) => {
+                            return self.update(Message::Repository(RepositoryAction::Init(
+                                path, password,
+                            )));
                         }
-                        DialogPage::CreateSnapshot => {
-                            return self.update(Message::CreateSnapshot);
+                        DialogPage::CreateSnapshot(files) => {
+                            return self.update(Message::CreateSnapshot(files));
+                        }
+                        DialogPage::Password(repository, password) => {
+                            return self.update(Message::Content(content::Message::SetRepository(
+                                repository, password,
+                            )));
                         }
                         DialogPage::DeleteRepository => {
                             if let Some(repository) = self.content.repository.clone() {

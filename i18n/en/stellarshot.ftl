@@ -12,6 +12,7 @@ loading-snapshots = Loading snapshots.
 
 # Dialogs
 save = Save
+ok = Ok
 create = Create
 delete = Delete
 cancel = Cancel
@@ -26,6 +27,7 @@ delete-repository = Delete repository
 delete-repository-description = Deleting a repository will remove all snapshots and files.
 delete-snapshot = Delete snapshot
 snapshot-description = A snapshot is a point-in-time copy of your repository.
+password = Password
 
 # Context Pages
 
