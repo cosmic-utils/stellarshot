@@ -63,7 +63,8 @@ pub enum Message {
     WindowNew,
     Repository(RepositoryAction),
     CreateSnapshot,
-    OpenCreateRepositoryDialog,
+    RequestFileForRepository,
+    OpenCreateRepositoryDialog(String),
     OpenCreateSnapshotDialog,
     DeleteRepositoryDialog,
 }
@@ -119,7 +120,7 @@ impl MenuAction for Action {
     fn message(&self) -> Self::Message {
         match self {
             Action::About => Message::ToggleContextPage(ContextPage::About),
-            Action::CreateRepository => Message::OpenCreateRepositoryDialog,
+            Action::CreateRepository => Message::RequestFileForRepository,
             Action::CreateSnapshot => Message::OpenCreateSnapshotDialog,
             Action::DeleteRepository => Message::DeleteRepositoryDialog,
             Action::Settings => Message::ToggleContextPage(ContextPage::Settings),
@@ -471,9 +472,42 @@ impl Application for App {
                 }
                 self.set_context_title(context_page.title());
             }
-            Message::OpenCreateRepositoryDialog => {
+            Message::RequestFileForRepository => {
+                return Command::perform(
+                    async {
+                        ashpd::desktop::file_chooser::SelectedFiles::open_file()
+                            .title("Select a directory for the repository")
+                            .directory(true)
+                            .send()
+                            .await
+                    },
+                    |result| match result {
+                        Ok(result) => match result.response() {
+                            Ok(files) => {
+                                if let Some(file) = files.uris().get(0) {
+                                    let path = file.path();
+                                    cosmic::app::Message::App(Message::OpenCreateRepositoryDialog(
+                                        path.to_string(),
+                                    ))
+                                } else {
+                                    cosmic::app::Message::None
+                                }
+                            }
+                            Err(err) => {
+                                log::error!("failed to open file chooser: {}", err);
+                                cosmic::app::Message::None
+                            }
+                        },
+                        Err(err) => {
+                            log::error!("failed to open file chooser: {}", err);
+                            cosmic::app::Message::None
+                        }
+                    },
+                )
+            }
+            Message::OpenCreateRepositoryDialog(path) => {
                 self.dialog_pages
-                    .push_back(DialogPage::CreateRepository(String::new()));
+                    .push_back(DialogPage::CreateRepository(path));
                 return widget::text_input::focus(self.dialog_text_input.clone());
             }
             Message::OpenCreateSnapshotDialog => {
