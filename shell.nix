@@ -9,6 +9,8 @@
     devShell = with pkgs; mkShell {
       buildInputs = [
         cargo
+        pkg-config
+        libxkbcommon
         rustc
         rust-analyzer
       ];
