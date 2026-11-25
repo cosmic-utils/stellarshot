@@ -12,7 +12,11 @@
 
 ![main branch parameter](https://github.com/cosmic-utils/stellarshot/actions/workflows/build.yml/badge.svg?branch=main)
 
-# UNDER ACTIVE DEVELOPMENT
+# LOOKING FOR A MAINTAINER
+
+This project is currently looking for a maintainer and as such is not under active development.
+
+## Keep Data Secure
 
 This application should NOT be trusted at this moment, up until its first release, important data is at risk. Always have multiple backups and follow the [3-2-1 rule](https://www.seagate.com/blog/what-is-a-3-2-1-backup-strategy/).
 
